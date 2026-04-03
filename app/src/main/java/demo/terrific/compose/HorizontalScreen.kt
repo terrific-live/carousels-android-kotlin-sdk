@@ -47,7 +47,7 @@ import androidx.core.net.toUri
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun VideoCarousel(
+fun VideoCarousel1(
     viewModel: CarouselViewModel,
     onVideoClick: (Int) -> Unit
 ) {
