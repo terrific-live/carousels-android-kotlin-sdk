@@ -1,2 +1,1 @@
-# carousels-android-kotlin-sdk
-carousels native android sdk
+# carousels-android-demo-app

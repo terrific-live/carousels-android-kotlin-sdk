@@ -1,0 +1,32 @@
+/build
+# Gradle
+.gradle/
+build/
+*/build/
+
+# Local configuration
+local.properties
+
+# Android Studio
+.idea/
+*.iml
+*.iws
+*.hprof
+
+# Log Files
+*.log
+
+# Android generated
+*.apk
+*.ap_
+*.aab
+*.dex
+bin/
+gen/
+.navigation/
+
+# Keystore
+*.jks
+
+# Proguard
+proguard/
