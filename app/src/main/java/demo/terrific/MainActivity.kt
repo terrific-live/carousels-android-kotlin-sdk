@@ -13,7 +13,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import dagger.hilt.android.AndroidEntryPoint
 import demo.terrific.compose.VerticalScreen
-import demo.terrific.compose.VideoCarousel
+import demo.terrific.compose.VideoCarousel1
 import demo.terrific.ui.theme.TerrificTheme
 import demo.terrific.viewmodel.CarouselViewModel
 import demo.terrific.viewmodel.FeedViewModel
@@ -42,7 +42,8 @@ fun AppRoot() {
     ) {
         composable("carousel") {
             val viewModel: CarouselViewModel = hiltViewModel()
-            VideoCarousel(
+//            val classs = TestCla
+            VideoCarousel1(
                 viewModel = viewModel,
                 onVideoClick = { index ->
                     navController.navigate("feed/$index")

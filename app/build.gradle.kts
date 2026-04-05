@@ -61,7 +61,7 @@ dependencies {
     implementation(libs.androidx.compose.navigation)
     implementation(libs.androidx.media3.transformer)
 
-    implementation(libs.video.sdk)
+//    implementation(libs.video.sdk)
 
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
