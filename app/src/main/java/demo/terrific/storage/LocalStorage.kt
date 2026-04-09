@@ -2,6 +2,7 @@ package demo.terrific.storage
 
 import android.content.Context
 import javax.inject.Inject
+import androidx.core.content.edit
 
 class LocalStorage @Inject constructor(
     context: Context
@@ -21,7 +22,7 @@ class LocalStorage @Inject constructor(
     }
 
     fun saveLikedVideos(set: Set<String>) {
-        prefs.edit().putStringSet(KEY_LIKED, set).apply()
+        prefs.edit { putStringSet(KEY_LIKED, set) }
     }
 
     // 🔊 MUTE
@@ -31,6 +32,6 @@ class LocalStorage @Inject constructor(
     }
 
     fun setMuted(value: Boolean) {
-        prefs.edit().putBoolean(KEY_MUTED, value).apply()
+        prefs.edit { putBoolean(KEY_MUTED, value) }
     }
 }

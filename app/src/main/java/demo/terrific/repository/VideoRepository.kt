@@ -2,8 +2,6 @@ package demo.terrific.repository
 
 import demo.terrific.api.VideosApi
 import demo.terrific.model.AssetDto
-import demo.terrific.model.PollOption
-import demo.terrific.model.VideoItem
 import javax.inject.Inject
 
 class VideoRepository @Inject constructor(

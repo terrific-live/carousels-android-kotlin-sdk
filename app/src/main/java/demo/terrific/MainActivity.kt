@@ -13,7 +13,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import dagger.hilt.android.AndroidEntryPoint
-import demo.terrific.compose.TestClass
 import demo.terrific.compose.VerticalScreen1
 import demo.terrific.compose.VideoCarousel1
 import demo.terrific.ui.theme.TerrificTheme
