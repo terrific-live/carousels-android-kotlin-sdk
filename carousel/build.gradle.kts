@@ -20,9 +20,6 @@ android {
         compose = true
     }
 
-//    composeOptions {
-//        kotlinCompilerExtensionVersion = "1.5.15"
-//    }
 
     publishing {
         singleVariant("release")
@@ -64,6 +61,8 @@ dependencies {
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.media3.ui)
     implementation(libs.androidx.material3)
+    implementation(libs.material.icons.extended)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

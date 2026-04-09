@@ -1,3 +1,5 @@
+@file:Suppress("COMPOSE_APPLIER_CALL_MISMATCH")
+
 package demo.terrific.compose
 
 import android.app.Activity
@@ -17,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.VolumeUp
@@ -48,17 +51,16 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
-import androidx.navigation.NavController
-import demo.terrific.model.AssetDto
-import demo.terrific.viewmodel.FeedViewModel
+import demo.terrific.compose.model.AssetDto
+import demo.terrific.compose.model.VideoItem
+import kotlin.collections.indexOfFirst
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun VerticalScreen1(
+fun VerticalScreen(
 //    viewModel: FeedViewModel,
     assets: List<AssetDto>,
-    videoId: String,
-    navController: NavController
+    videoId: String
 ) {
 //    val videos by viewModel.videos.collectAsState()
 
@@ -87,14 +89,13 @@ fun VerticalScreen1(
 
         val video = assets[page]
 
-        FullscreenVideoScreen(video, navController)
+        FullscreenVideoScreen(video)
     }
 }
 
 @Composable
 fun FullscreenVideoScreen(
-    video: AssetDto,
-    navController: NavController
+    video: AssetDto
 ) {
 
     Box(
@@ -103,7 +104,7 @@ fun FullscreenVideoScreen(
         // VIDEO
         FullscreenVideoPlayer(video)
         // OTHER UI
-        VideoOverlay(video, navController)
+        VideoOverlay(video)
     }
 }
 
@@ -167,8 +168,7 @@ fun HideSystemBars() {
 
 @Composable
 fun VideoOverlay(
-    video: AssetDto,
-    navController: NavController
+    video: AssetDto
 ) {
 
     Box(
@@ -180,7 +180,7 @@ fun VideoOverlay(
 
         // CLOSE BUTTON
         IconButton(
-            onClick = { navController.popBackStack() },
+            onClick = { /*navController.popBackStack()*/ },
             modifier = Modifier.align(Alignment.TopEnd)
         ) {
             Icon(Icons.Default.Close, contentDescription = "Close")

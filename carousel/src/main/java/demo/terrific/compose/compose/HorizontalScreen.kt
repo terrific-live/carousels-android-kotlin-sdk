@@ -1,6 +1,5 @@
-package demo.terrific.compose
+package demo.terrific.compose.compose
 
-import android.net.Uri
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -24,7 +23,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -40,12 +38,12 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
-import demo.terrific.model.VideoItem
-import demo.terrific.viewmodel.CarouselViewModel
 import kotlinx.coroutines.delay
 import kotlin.math.absoluteValue
 import androidx.core.net.toUri
-import demo.terrific.model.AssetDto
+import demo.terrific.compose.model.AssetDto
+import demo.terrific.compose.model.VideoItem
+import kotlin.collections.get
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable

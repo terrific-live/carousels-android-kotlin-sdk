@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -12,7 +13,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import dagger.hilt.android.AndroidEntryPoint
-import demo.terrific.compose.VerticalScreen
+import demo.terrific.compose.TestClass
+import demo.terrific.compose.VerticalScreen1
 import demo.terrific.compose.VideoCarousel1
 import demo.terrific.ui.theme.TerrificTheme
 import demo.terrific.viewmodel.CarouselViewModel
@@ -42,9 +44,9 @@ fun AppRoot() {
     ) {
         composable("carousel") {
             val viewModel: CarouselViewModel = hiltViewModel()
-//            val classs = TestCla
+            val assets = viewModel.assets.collectAsState()
             VideoCarousel1(
-                viewModel = viewModel,
+                assets = assets.value,
                 onVideoClick = { index ->
                     navController.navigate("feed/$index")
                 }
@@ -52,17 +54,24 @@ fun AppRoot() {
         }
 
         composable(
-            route = "feed/{startIndex}",
+            route = "feed/{videoId}",
             arguments = listOf(
-                navArgument("startIndex") {
-                    type = NavType.IntType
+                navArgument("videoId") {
+                    type = NavType.StringType
                 }
             )
         ) {
+                backStackEntry ->
+
+            val videoId = backStackEntry.arguments?.getString("videoId")!!
             val viewModel: FeedViewModel = hiltViewModel()
-            VerticalScreen(
-                viewModel = viewModel
-            )
+            viewModel.loadFeed()
+            val assets = viewModel.videos.collectAsState()
+            VerticalScreen1(
+                assets = assets.value,
+                videoId = videoId,
+                navController = navController)
+
         }
     }
 }
