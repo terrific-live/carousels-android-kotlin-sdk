@@ -1,7 +1,7 @@
 package demo.terrific.repository
 
 import demo.terrific.api.VideosApi
-import demo.terrific.model.AssetDto
+import demo.terrific.compose.model.AssetDto
 import javax.inject.Inject
 
 class VideoRepository @Inject constructor(
@@ -9,8 +9,8 @@ class VideoRepository @Inject constructor(
 ) {
     suspend fun loadAssets(): List<AssetDto> {
         return api.getAssets(
-            storeId = "0bor4CHMEbm3M4Dluput",
-            carouselId = "HmUOF0rG4fO1v9U63t7Z",
+            storeId = "1FEyyLAlBJY8000v5nfL",
+            carouselId = "sQsA6UF3MwDfIz4TZXM7",
             numberOfItems = 20,
             isRedirect = false,
 //            shopPageUrl = "https://www.france.tv/jeux-et-divertissements/",
@@ -20,8 +20,8 @@ class VideoRepository @Inject constructor(
 
     suspend fun loadVerticalAssets(): List<AssetDto> {
         return api.getVerticalAssets(
-            storeId = "0bor4CHMEbm3M4Dluput",
-            displayId = "HmUOF0rG4fO1v9U63t7Z",
+            storeId = "1FEyyLAlBJY8000v5nfL",
+            displayId = "sQsA6UF3MwDfIz4TZXM7",
             numberOfItems = 20,
             isRedirect = false,
 //            shopPageUrl = "https://www.france.tv/jeux-et-divertissements/",

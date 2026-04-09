@@ -54,7 +54,7 @@ object NetworkModule {
     @Provides
     fun provideRetrofit(okHttp: OkHttpClient): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("https://terrific-staging-polls.web.app/")
+            .baseUrl("https://terrific-live-polls.web.app/")
             .client(okHttp)
             .addConverterFactory(GsonConverterFactory.create())
             .build()

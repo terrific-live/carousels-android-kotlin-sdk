@@ -1,6 +1,6 @@
 package demo.terrific.api
 
-import demo.terrific.model.AssetsResponse
+import demo.terrific.compose.model.AssetsResponse
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query

@@ -3,7 +3,7 @@ package demo.terrific.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import demo.terrific.model.AssetDto
+import demo.terrific.compose.model.AssetDto
 import demo.terrific.repository.VideoRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

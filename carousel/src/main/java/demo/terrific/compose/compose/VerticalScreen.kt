@@ -1,6 +1,4 @@
-@file:Suppress("COMPOSE_APPLIER_CALL_MISMATCH")
-
-package demo.terrific.compose
+package demo.terrific.compose.compose
 
 import android.app.Activity
 import android.content.Intent
@@ -18,6 +16,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.VolumeUp
@@ -54,7 +53,9 @@ import demo.terrific.compose.model.AssetDto
 fun VerticalScreen(
 //    viewModel: FeedViewModel,
     assets: List<AssetDto>,
-    videoId: String
+    likedVideos: Set<String>,
+    videoId: String,
+    onLikeClick: (String) -> Unit
 ) {
 //    val videos by viewModel.videos.collectAsState()
 
@@ -83,13 +84,15 @@ fun VerticalScreen(
 
         val video = assets[page]
 
-        FullscreenVideoScreen(video)
+        FullscreenVideoScreen(video, likedVideos, onLikeClick)
     }
 }
 
 @Composable
 fun FullscreenVideoScreen(
-    video: AssetDto
+    video: AssetDto,
+    likedVideos: Set<String>,
+    onLikeClick: (String) -> Unit
 ) {
 
     Box(
@@ -98,7 +101,7 @@ fun FullscreenVideoScreen(
         // VIDEO
         FullscreenVideoPlayer(video)
         // OTHER UI
-        VideoOverlay(video)
+        VideoOverlay(video, likedVideos, onLikeClick)
     }
 }
 
@@ -162,7 +165,9 @@ fun HideSystemBars() {
 
 @Composable
 fun VideoOverlay(
-    video: AssetDto
+    video: AssetDto,
+    likedVideos: Set<String>,
+    onLikeClick: (String) -> Unit
 ) {
 
     Box(
@@ -191,10 +196,9 @@ fun VideoOverlay(
                 .padding(6.dp)
         )
 
-//        val likedVideos by viewModel.likedVideos.collectAsState()
-//        val isMuted by viewModel.isMuted.collectAsState()
+        var isMuted by remember { mutableStateOf(false) }
 
-//        val isLiked = likedVideos.contains(video.id)
+        val isLiked = likedVideos.contains(video.id)
 
         // RIGHT ACTIONS
         Column(
@@ -203,11 +207,11 @@ fun VideoOverlay(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-//            IconButton(onClick = { viewModel.toggleLike(video.id) }) {
-//                Icon(imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-//                    contentDescription = "Like",
-//                    tint = if (isLiked) Color.Red else Color.White)
-//            }
+            IconButton(onClick = { onLikeClick(video.id) }) {
+                Icon(imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    contentDescription = "Like",
+                    tint = if (isLiked) Color.Red else Color.White)
+            }
 
             Spacer(Modifier.height(12.dp))
 
@@ -229,10 +233,13 @@ fun VideoOverlay(
             Spacer(Modifier.height(12.dp))
 
             IconButton(
-                onClick = { /*viewModel.toggleMute()*/ }
+                onClick = {
+                    isMuted = !isMuted
+//                    player.volume = if (isMuted) 0f else 1f
+                }
             ) {
                 Icon(
-                    imageVector = if (true /*isMuted*/) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
+                    imageVector = if (isMuted) Icons.Default.VolumeOff else Icons.Default.VolumeUp,
                     contentDescription = "Mute",
                     tint = Color.White
                 )

@@ -37,7 +37,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
-import demo.terrific.model.AssetDto
+import demo.terrific.compose.model.AssetDto
 import demo.terrific.model.VideoItem
 import kotlinx.coroutines.delay
 import kotlin.math.absoluteValue

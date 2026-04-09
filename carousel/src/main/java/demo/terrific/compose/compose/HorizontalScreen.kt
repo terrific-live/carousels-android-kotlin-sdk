@@ -44,7 +44,7 @@ import kotlin.math.absoluteValue
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun VideoCarousel1(
+fun VideoCarousel(
 //    viewModel: CarouselViewModel,
     assets: List<AssetDto>,
     onVideoClick: (String) -> Unit
