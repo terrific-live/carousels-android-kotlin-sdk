@@ -80,7 +80,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.retrofit.gson)
 
-    implementation("com.github.terrific-live:carousels-android-kotlin-sdk:v1.0.5")
+//    implementation("com.github.terrific-live:carousels-android-kotlin-sdk:v1.0.4")
 
     implementation(libs.media3.exoplayer)
     implementation(libs.androidx.media3.ui)
