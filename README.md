@@ -1,22 +1,24 @@
-# Terrific Carousel SDK for Android
+# 🎬 Video Feature SDK for Android (Jetpack Compose)
 
-A lightweight and flexible carousel SDK built with **Jetpack Compose**, designed for smooth video browsing experiences and easy integration.
-
----
-
-## 📦 Requirements
-
-- Android API 17+
-- Kotlin
-- Jetpack Compose
+Reusable video carousel + vertical feed SDK for Android.
+Designed as a **self-contained library** with minimal integration effort.
 
 ---
 
-## 🚀 Installation
+## ✨ Features
 
-### 1. Add JitPack repository
+* 🎞 Video Carousel (horizontal)
+* 📱 Vertical video feed (TikTok-style)
+* ❤️ Like support
+* 🎨 Fully customizable UI (radius, height, fonts)
+* 🚀 No ViewModel / No Hilt / No Navigation required
+* 🔌 Works in both **Compose** and **XML projects**
 
-In your **`settings.gradle.kts`**:
+---
+
+## 📦 Installation
+
+### 1. Add repositories
 
 ```kotlin
 dependencyResolutionManagement {
@@ -32,95 +34,128 @@ dependencyResolutionManagement {
 
 ### 2. Add dependency
 
-In your **app `build.gradle.kts`**:
-
 ```kotlin
-dependencies {
-    implementation("com.github.terrific-live:carousels-android-kotlin-sdk:v1.0.8")
-}
+implementation("com.github.terrific-live:carousels-android-kotlin-sdk:v1.0.8")
 ```
-
 ---
 
-## 🛠 Usage (Jetpack Compose)
+## 🚀 Usage (Jetpack Compose)
 
-SDK provides two main composables:
-
-- `VideoCarousel` — horizontal preview carousel  
-- `VerticalScreen` — full-screen video feed  
-
----
-
-## 🎬 Video Carousel
-
-Use this to display a horizontal list of videos:
-
+### Example
 ```kotlin
-VideoCarousel(
-    assets = assets.value,
-    onVideoClick = { index ->
-        navController.navigate("feed/$index")
-    }
-)
-```
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
 
-### Parameters
-
-| Parameter      | Type           | Description                      |
-|----------------|----------------|----------------------------------|
-| `assets`       | List           | List of video items              |
-| `onVideoClick` | (Int) -> Unit  | Callback when video is clicked   |
-
----
-
-## 📱 Vertical Video Screen
-
-Full-screen immersive video feed:
-
-```kotlin
-VerticalScreen(
-    assets = assets.value,
-    videoId = videoId,
-    likedVideos = likedVideos.value,
-    onLikeClick = {
-        viewModel.toggleLike(it)
-    }
-)
-```
-
-### Parameters
-
-| Parameter       | Type             | Description                      |
-|-----------------|------------------|----------------------------------|
-| `assets`        | List             | Video items                      |
-| `videoId`       | Int / String     | Initial video index or ID        |
-| `likedVideos`   | List / Set       | Liked videos state               |
-| `onLikeClick`   | (Video) -> Unit  | Like button callback             |
-
----
-
-## 🔄 Navigation Example
-
-```kotlin
-NavHost(navController, startDestination = "carousel") {
-
-    composable("carousel") {
-        VideoCarousel(
-            assets = assets,
-            onVideoClick = { index ->
-                navController.navigate("feed/$index")
+        setContent {
+            TerrificTheme {
+                AppRoot()
             }
-        )
+        }
     }
+}
 
-    composable("feed/{index}") { backStackEntry ->
-        val index = backStackEntry.arguments?.getString("index")?.toInt() ?: 0
+@Composable
+fun AppRoot() {
 
-        VerticalScreen(
-            assets = assets,
-            videoId = index,
-            likedVideos = likedVideos,
-            onLikeClick = { viewModel.toggleLike(it) }
+    AssetCarousel(
+        storeId = "your_store_id",
+        carouselId = "your_carousel_id"
+    )
+
+}
+```
+
+---
+
+## 🧱 Usage (XML)
+
+### XML
+
+```xml
+<androidx.compose.ui.platform.ComposeView
+    android:id="@+id/videoFeature"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"/>
+```
+
+### Fragment / Activity
+
+```kotlin
+composeView.setViewCompositionStrategy(
+    ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
+)
+
+composeView.setContent {
+    AssetCarousel(
+        storeId = "your_store_id",
+        carouselId = "your_carousel_id"
+    )
+}
+```
+
+---
+
+## 🎨 UI Customization
+
+You can fully customize UI via `VideoFeatureStyle`.
+
+### Example
+
+```kotlin
+AssetCarousel(
+    storeId = "your_store_id",
+    carouselId = "your_carousel_id"
+    style = VideoFeatureStyle(
+        carouselHeight: Dp = 220.dp,
+        cornerRadius: Dp = 16.dp
+    )
+)
+```
+
+---
+
+
+## 🧠 Architecture
+
+The SDK is built with:
+
+* **State-driven UI (no Navigation)**
+* **Controller instead of ViewModel**
+* **Internal Retrofit data layer**
+* **Public simple API**
+
+```
+VideoFeature(feedId)
+    ↓
+Controller (StateFlow)
+    ↓
+Repository
+    ↓
+Retrofit API
+```
+
+---
+
+## 🔌 Configuration
+By default base url to fetch a data is 
+
+```
+"https://terrific-staging-polls.web.app/"
+```
+You can change it to your own by adding this to your Application class
+
+### Example
+
+```kotlin
+class TerrificApp : Application() {
+
+    override fun onCreate() {
+        super.onCreate()
+        VideoSdk.initialize(
+            VideoSdkConfig(
+                baseUrl = "https://terrific-live-polls.web.app/"
+            )
         )
     }
 }
@@ -128,33 +163,24 @@ NavHost(navController, startDestination = "carousel") {
 
 ---
 
-## 🧩 Data Model Example
+## ⚠️ Requirements
 
-```kotlin
-@Serializable
-data class AssetsResponse(
-    val assets: List<AssetDto>
-)
+* minSdk: 24+
+* Kotlin 2.x
+* Jetpack Compose enabled
 
-@Serializable
-data class AssetDto(
-    val id: String,
-    val name: String?,
-    val type: String,
-    val title: String?,
-    val description: String?,
-    val media: MediaDto?
-)
+---
 
-@Serializable
-data class MediaDto(
-    val coverUrl: String?,
-    val desktopUrl: String?,
-    val mobileUrl: String?,
-    val srcUrl: String?,
-    val videoPreviewUrl: String?
-)
-```
+## 💡 Notes
 
-> Replace with your actual model if different.
+* SDK manages its own state internally
+* No dependency on host app architecture
+* Can be embedded into any screen
 
+---
+
+## 🧑‍💻 Author
+
+Built for scalable Android video experiences.
+
+---
