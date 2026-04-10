@@ -1,7 +1,7 @@
 package demo.terrific.repository
 
 import demo.terrific.api.VideosApi
-import demo.terrific.compose.model.AssetDto
+import demo.terrific.model.AssetDto
 import javax.inject.Inject
 
 class VideoRepository @Inject constructor(
