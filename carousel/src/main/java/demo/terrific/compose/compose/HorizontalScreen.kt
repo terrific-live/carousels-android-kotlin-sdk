@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
@@ -39,6 +40,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import demo.terrific.compose.model.AssetDto
 import demo.terrific.compose.model.VideoItem
+import demo.terrific.compose.style.VideoFeatureStyle
 import kotlinx.coroutines.delay
 import kotlin.math.absoluteValue
 
@@ -47,6 +49,7 @@ import kotlin.math.absoluteValue
 fun VideoCarousel(
 //    viewModel: CarouselViewModel,
     assets: List<AssetDto>,
+    style: VideoFeatureStyle,
     onVideoClick: (String) -> Unit
 ) {
     val context = LocalContext.current
@@ -70,7 +73,10 @@ fun VideoCarousel(
     }
 
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .height(style.carouselHeight)
+            .clip(RoundedCornerShape(style.cornerRadius)),
         contentAlignment = Alignment.Center
     ) {
 

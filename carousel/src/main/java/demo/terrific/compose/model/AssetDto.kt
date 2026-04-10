@@ -14,7 +14,8 @@ data class AssetDto(
     val type: String,
     val title: String?,
     val description: String?,
-    val media: MediaDto?
+    val timestamp: String?,
+    val media: MediaDto?,
 )
 
 @Serializable

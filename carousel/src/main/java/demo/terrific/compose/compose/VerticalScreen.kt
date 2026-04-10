@@ -47,14 +47,19 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import demo.terrific.compose.model.AssetDto
+import demo.terrific.compose.style.VideoFeatureStyle
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.TimeZone
+import kotlin.time.ExperimentalTime
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun VerticalScreen(
-//    viewModel: FeedViewModel,
     assets: List<AssetDto>,
-    likedVideos: Set<String>,
+//    likedVideos: Set<String>,
     videoId: String,
+    style: VideoFeatureStyle,
     onLikeClick: (String) -> Unit
 ) {
 //    val videos by viewModel.videos.collectAsState()
@@ -84,14 +89,13 @@ fun VerticalScreen(
 
         val video = assets[page]
 
-        FullscreenVideoScreen(video, likedVideos, onLikeClick)
+        FullscreenVideoScreen(video, onLikeClick)
     }
 }
 
 @Composable
 fun FullscreenVideoScreen(
     video: AssetDto,
-    likedVideos: Set<String>,
     onLikeClick: (String) -> Unit
 ) {
 
@@ -101,7 +105,7 @@ fun FullscreenVideoScreen(
         // VIDEO
         FullscreenVideoPlayer(video)
         // OTHER UI
-        VideoOverlay(video, likedVideos, onLikeClick)
+        VideoOverlay(video, onLikeClick)
     }
 }
 
@@ -166,7 +170,6 @@ fun HideSystemBars() {
 @Composable
 fun VideoOverlay(
     video: AssetDto,
-    likedVideos: Set<String>,
     onLikeClick: (String) -> Unit
 ) {
 
@@ -186,19 +189,25 @@ fun VideoOverlay(
         }
 
 
+        val formatted = remember(video.timestamp) {
+            video.timestamp?.toFormatted()
+        }
 
         // DATE
-        Text(
-            text = "sfsdfsdf",
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .background(Color.White.copy(alpha = 0.8f))
-                .padding(6.dp)
-        )
+
+        if (formatted?.isNotEmpty() == true) {
+            Text(
+                text = formatted.toString(),
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .background(Color.White.copy(alpha = 0.8f))
+                    .padding(6.dp)
+            )
+        }
 
         var isMuted by remember { mutableStateOf(false) }
 
-        val isLiked = likedVideos.contains(video.id)
+//        val isLiked = likedVideos.contains(video.id)
 
         // RIGHT ACTIONS
         Column(
@@ -208,9 +217,9 @@ fun VideoOverlay(
         ) {
 
             IconButton(onClick = { onLikeClick(video.id) }) {
-                Icon(imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                Icon(imageVector = if (false) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                     contentDescription = "Like",
-                    tint = if (isLiked) Color.Red else Color.White)
+                    tint = if (false) Color.Red else Color.White)
             }
 
             Spacer(Modifier.height(12.dp))
@@ -334,5 +343,29 @@ fun ActionButtons(
                 )
             }
         }
+    }
+}
+
+@OptIn(ExperimentalTime::class)
+fun String.toFormatted(): String {
+    return try {
+        val inputFormat = SimpleDateFormat(
+            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+            Locale.getDefault()
+        ).apply {
+            timeZone = TimeZone.getTimeZone("UTC")
+        }
+
+        val outputFormat = SimpleDateFormat(
+            "dd/MM/yyyy - HH'h'mm",
+            Locale.getDefault()
+        ).apply {
+            timeZone = TimeZone.getDefault()
+        }
+
+        val date = inputFormat.parse(this) ?: return this
+        outputFormat.format(date)
+    } catch (e: Exception) {
+        this
     }
 }
