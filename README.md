@@ -36,7 +36,7 @@ In your **app `build.gradle.kts`**:
 
 ```kotlin
 dependencies {
-    implementation("com.github.terrific-live:carousels-android-kotlin-sdk:v1.0.5")
+    implementation("com.github.terrific-live:carousels-android-kotlin-sdk:v1.0.8")
 }
 ```
 
