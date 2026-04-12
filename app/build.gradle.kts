@@ -55,7 +55,7 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
 
 
-//    implementation(project(":carousel"))
+    implementation(project(":carousel"))
 
 
     implementation(libs.androidx.compose.ui)

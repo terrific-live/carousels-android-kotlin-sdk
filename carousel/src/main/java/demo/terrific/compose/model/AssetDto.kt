@@ -16,6 +16,21 @@ data class AssetDto(
     val description: String?,
     val timestamp: String?,
     val media: MediaDto?,
+    val pollData: PollDataDto?,
+)
+
+@Serializable
+data class PollDataDto(
+    val id: String,
+    val question: String,
+    val questionId: String,
+    val options: List<PollOptionDto>
+)
+
+@Serializable
+data class PollOptionDto(
+    val text: String,
+    val numberOfVotes: Int
 )
 
 @Serializable

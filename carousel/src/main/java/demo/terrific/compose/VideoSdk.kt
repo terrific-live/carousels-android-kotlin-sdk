@@ -1,8 +1,13 @@
 package demo.terrific.compose
 
+import android.content.Context
 import demo.terrific.compose.network.VideoApi
 import demo.terrific.compose.repository.VideoRepository
 import demo.terrific.compose.repository.VideoRepositoryImpl
+import demo.terrific.compose.storage.likes.LikesStorage
+import demo.terrific.compose.storage.likes.SharedPrefsLikesStorage
+import demo.terrific.compose.storage.storage.PollStorage
+import demo.terrific.compose.storage.storage.SharedPrefsPollStorage
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -12,42 +17,37 @@ object VideoSdk {
     @Volatile
     private var isInitialized = false
 
-    private lateinit var config: VideoSdkConfig
-    private lateinit var retrofit: Retrofit
-    private lateinit var api: VideoApi
     private lateinit var repository: VideoRepository
+    private lateinit var likesStorage: LikesStorage
+    private lateinit var pollStorage: PollStorage
 
-    fun initialize(config: VideoSdkConfig) {
+    @Synchronized
+    fun ensureInitialized(context: Context) {
+        if (isInitialized) return
 
-        if (config.baseUrl.isEmpty()) {
-            this.config = VideoSdkConfig("https://terrific-staging-polls.web.app/")
-        } else {
-            this.config = config
-        }
+        val client = OkHttpClient.Builder().addInterceptor { chain ->
+            val requestBuilder = chain.request().newBuilder()
+            chain.proceed(requestBuilder.build())
+        }.build()
 
-        retrofit = Retrofit.Builder()
-            .baseUrl(config.baseUrl)
+        val retrofit = Retrofit.Builder()
+            .baseUrl("https://terrific-staging-polls.web.app/")
+            .client(client)
             .addConverterFactory(GsonConverterFactory.create())
-            .client(
-                OkHttpClient.Builder()
-                    .addInterceptor { chain ->
-                        val requestBuilder = chain.request().newBuilder()
-                        chain.proceed(requestBuilder.build())
-                    }
-                    .build()
-            )
             .build()
 
-        api = retrofit.create(VideoApi::class.java)
+        val api = retrofit.create(VideoApi::class.java)
+
         repository = VideoRepositoryImpl(api)
+        likesStorage = SharedPrefsLikesStorage(context.applicationContext)
+        pollStorage = SharedPrefsPollStorage(context.applicationContext)
+
         isInitialized = true
     }
 
-    fun repository(): VideoRepository {
-        check(isInitialized) {
-            "VideoSdk is not initialized. Call VideoSdk.initialize(...) first."
-        }
-        return repository
-    }
+    internal fun repository(): VideoRepository = repository
+    internal fun likesStorage(): LikesStorage = likesStorage
+    internal fun pollStorage(): PollStorage = pollStorage
+
 }
 

@@ -1,5 +1,6 @@
 package demo.terrific.compose.compose
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
@@ -11,6 +12,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import demo.terrific.compose.VideoSdk
 import demo.terrific.compose.controller.VideoFeatureController
 import demo.terrific.compose.style.VideoFeatureStyle
@@ -52,31 +54,43 @@ fun AssetCarousel(
 
         state.screen is VideoScreen.Feed -> {
             val selectedVideoId = state.assets
-                .find { state.selectedId == it.id }/*(state.selectedId)*/
+                .find { state.selectedId == it.id }
                 ?.id
                 .orEmpty()
 
             VerticalScreen(
                 assets = state.assets,
+                likedVideos = state.likedVideoIds,
                 videoId = selectedVideoId,
-                style = style,
                 onLikeClick = { id ->
                     controller.onLikeClick(id)
-                }/*,
-                onBack = controller::onBack*/
+                },
+                onPollOptionClick = controller::onPollOptionClick,
+                onBackClicked = controller::onBack
             )
         }
     }
 }
 
+@SuppressLint("RememberReturnType")
 @Composable
 internal fun rememberVideoFeatureController(): VideoFeatureController {
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val repository = remember { VideoSdk.repository() }
 
-    return remember(repository, scope) {
+    remember(context) {
+        VideoSdk.ensureInitialized(context)
+    }
+
+    val repository = remember { VideoSdk.repository() }
+    val likesStorage = remember { VideoSdk.likesStorage() }
+    val pollStorage = remember { VideoSdk.pollStorage() }
+
+    return remember(repository, likesStorage, pollStorage,scope) {
         VideoFeatureController(
             repository = repository,
+            likesStorage = likesStorage,
+            pollStorage = pollStorage,
             scope = scope
         )
     }
