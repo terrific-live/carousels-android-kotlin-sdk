@@ -115,6 +115,17 @@ AssetCarousel(
 
 ---
 
+## Analytics callback
+```
+    VideoSdk.setAnalyticsListener(
+        object : VideoSdkAnalyticsListener {
+            override fun onAnalyticsEventTracked(event: UserEventRequest) {
+                Log.d("SDK_ANALYTICS", "Tracked: ${event.name}")
+            }
+        }
+    )
+```
+
 
 ## 🧠 Architecture
 
