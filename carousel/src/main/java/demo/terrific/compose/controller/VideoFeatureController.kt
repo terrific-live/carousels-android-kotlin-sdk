@@ -1,7 +1,10 @@
 package demo.terrific.compose.controller
 
+import demo.terrific.compose.VideoSdk
+import demo.terrific.compose.analytics.AnalyticsEvent
 import demo.terrific.compose.compose.VideoScreen
 import demo.terrific.compose.model.AssetDto
+import demo.terrific.compose.model.analytics.AuxData
 import demo.terrific.compose.repository.VideoRepository
 import demo.terrific.compose.storage.likes.LikesStorage
 import demo.terrific.compose.storage.storage.PollStorage
@@ -10,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.collections.mapNotNull
 
 internal class VideoFeatureController(
     private val repository: VideoRepository,
@@ -32,13 +36,69 @@ internal class VideoFeatureController(
 
             runCatching {
                 repository.getFeed(storeId, carouselId)
-            }.onSuccess { feed ->
+            }.onSuccess { assets ->
+                val restoredAssets = assets.map { asset ->
+                    val pollData = asset.pollData
+
+                    if (pollData != null) {
+                        val savedPollState = pollStorage.getSavedPollState(pollData.questionId)
+
+                        if (savedPollState != null) {
+                            val restoredOptions = pollData.options.map { option ->
+                                val savedOption = savedPollState.options.firstOrNull { saved ->
+                                    saved.text == option.text
+                                }
+
+                                if (savedOption != null) {
+                                    option.copy(numberOfVotes = savedOption.numberOfVotes)
+                                } else {
+                                    option
+                                }
+                            }
+
+                            asset.copy(
+                                pollData = pollData.copy(
+                                    options = restoredOptions
+                                )
+                            )
+                        } else {
+                            asset
+                        }
+                    } else {
+                        asset
+                    }
+                }
+
+                val restoredPollAnswers = restoredAssets
+                    .mapNotNull { asset ->
+                        val pollData = asset.pollData ?: return@mapNotNull null
+                        val savedPollState = pollStorage.getSavedPollState(pollData.questionId)
+
+                        if (savedPollState != null) {
+                            pollData.questionId to savedPollState.selectedOptionText
+                        } else {
+                            null
+                        }
+                    }
+                    .toMap()
+
+                val likedVideos = likesStorage.getLikedVideoIds(carouselId)
+
                 _state.update {
                     it.copy(
                         isLoading = false,
-                        assets = feed
+                        assets = restoredAssets,
+                        likedVideoIds = likedVideos,
+                        selectedPollAnswers = restoredPollAnswers
                     )
                 }
+
+                VideoSdk.analytics().trackEvent(
+                    AnalyticsEvent.TimelineCarouselLoaded,
+                    AuxData(
+                        assets = assets
+                    )
+                )
             }.onFailure { throwable ->
                 _state.update {
                     it.copy(
@@ -76,10 +136,34 @@ internal class VideoFeatureController(
     }
 
     fun onPollOptionClick(questionId: String, optionText: String) {
-        pollStorage.saveVote(questionId, optionText)
+        val updatedAssets = _state.value.assets.map { asset ->
+            val pollData = asset.pollData
+            if (pollData?.questionId == questionId) {
+                val updatedOptions = pollData.options.map { option ->
+                    if (option.text == optionText) {
+                        option.copy(numberOfVotes = option.numberOfVotes + 1)
+                    } else {
+                        option
+                    }
+                }
+
+                pollStorage.savePollState(
+                    questionId = questionId,
+                    selectedOptionText = optionText,
+                    options = updatedOptions
+                )
+
+                asset.copy(
+                    pollData = pollData.copy(options = updatedOptions)
+                )
+            } else {
+                asset
+            }
+        }
 
         _state.update {
             it.copy(
+                assets = updatedAssets,
                 selectedPollAnswers = it.selectedPollAnswers + (questionId to optionText)
             )
         }

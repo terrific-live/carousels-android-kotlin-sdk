@@ -21,6 +21,4 @@ class VideoRepositoryImpl(
         ).assets
     }
 
-//    "1FEyyLAlBJY8000v5nfL","sQsA6UF3MwDfIz4TZXM7"
-
 }

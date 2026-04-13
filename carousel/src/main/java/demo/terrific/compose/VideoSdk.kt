@@ -1,9 +1,15 @@
 package demo.terrific.compose
 
 import android.content.Context
+import androidx.annotation.StringDef
+import demo.terrific.compose.analytics.TerrificAnalyticsManager
+import demo.terrific.compose.network.TerrificAnalyticsApi
 import demo.terrific.compose.network.VideoApi
 import demo.terrific.compose.repository.VideoRepository
 import demo.terrific.compose.repository.VideoRepositoryImpl
+import demo.terrific.compose.repository.analytics.TerrificAnalyticsRepository
+import demo.terrific.compose.storage.analytics.AnalyticsSessionStorage
+import demo.terrific.compose.storage.analytics.SharedPrefsAnalyticsSessionStorage
 import demo.terrific.compose.storage.likes.LikesStorage
 import demo.terrific.compose.storage.likes.SharedPrefsLikesStorage
 import demo.terrific.compose.storage.storage.PollStorage
@@ -20,9 +26,14 @@ object VideoSdk {
     private lateinit var repository: VideoRepository
     private lateinit var likesStorage: LikesStorage
     private lateinit var pollStorage: PollStorage
+    private lateinit var analyticsManager: TerrificAnalyticsManager
+    private lateinit var analyticsSessionStorage: AnalyticsSessionStorage
 
     @Synchronized
-    fun ensureInitialized(context: Context) {
+    fun ensureInitialized(
+        context: Context,
+        storeId: String
+    ) {
         if (isInitialized) return
 
         val client = OkHttpClient.Builder().addInterceptor { chain ->
@@ -31,16 +42,29 @@ object VideoSdk {
         }.build()
 
         val retrofit = Retrofit.Builder()
-            .baseUrl("https://terrific-staging-polls.web.app/")
+            .baseUrl("https://terrific-live-polls.web.app/")
             .client(client)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
 
         val api = retrofit.create(VideoApi::class.java)
+        val analyticsApi = retrofit.create(TerrificAnalyticsApi::class.java)
 
         repository = VideoRepositoryImpl(api)
         likesStorage = SharedPrefsLikesStorage(context.applicationContext)
         pollStorage = SharedPrefsPollStorage(context.applicationContext)
+
+        analyticsSessionStorage =
+            SharedPrefsAnalyticsSessionStorage(context.applicationContext)
+
+        val analyticsRepository = TerrificAnalyticsRepository(analyticsApi)
+
+        analyticsManager = TerrificAnalyticsManager(
+            storeId = storeId,
+            parentUrl = "",
+            sessionStorage = analyticsSessionStorage,
+            repository = analyticsRepository
+        )
 
         isInitialized = true
     }
@@ -48,6 +72,8 @@ object VideoSdk {
     internal fun repository(): VideoRepository = repository
     internal fun likesStorage(): LikesStorage = likesStorage
     internal fun pollStorage(): PollStorage = pollStorage
+
+    internal fun analytics(): TerrificAnalyticsManager = analyticsManager
 
 }
 

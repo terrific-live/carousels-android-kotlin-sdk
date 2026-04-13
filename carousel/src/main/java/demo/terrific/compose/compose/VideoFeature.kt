@@ -24,7 +24,7 @@ fun AssetCarousel(
     modifier: Modifier = Modifier,
     style: VideoFeatureStyle = VideoFeatureStyle()
 ) {
-    val controller = rememberVideoFeatureController()
+    val controller = rememberVideoFeatureController(storeId = storeId)
     val state by controller.state.collectAsState()
 
     LaunchedEffect(storeId) {
@@ -61,6 +61,7 @@ fun AssetCarousel(
             VerticalScreen(
                 assets = state.assets,
                 likedVideos = state.likedVideoIds,
+                selectedPollAnswers = state.selectedPollAnswers,
                 videoId = selectedVideoId,
                 onLikeClick = { id ->
                     controller.onLikeClick(id)
@@ -74,12 +75,12 @@ fun AssetCarousel(
 
 @SuppressLint("RememberReturnType")
 @Composable
-internal fun rememberVideoFeatureController(): VideoFeatureController {
+internal fun rememberVideoFeatureController(storeId: String): VideoFeatureController {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
     remember(context) {
-        VideoSdk.ensureInitialized(context)
+        VideoSdk.ensureInitialized(context, storeId)
     }
 
     val repository = remember { VideoSdk.repository() }

@@ -1,7 +1,12 @@
 package demo.terrific.compose.storage.storage
 
+import demo.terrific.compose.model.PollOptionDto
+
 interface PollStorage {
-    fun saveVote(questionId: String, optionText: String)
-    fun getVote(questionId: String): String?
-    fun hasVoted(questionId: String): Boolean
+    fun savePollState(
+        questionId: String,
+        selectedOptionText: String,
+        options: List<PollOptionDto>
+    )
+    fun getSavedPollState(questionId: String): SavedPollState?
 }

@@ -1,5 +1,6 @@
 package demo.terrific.compose.compose
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -29,10 +30,14 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import demo.terrific.compose.VideoSdk
+import demo.terrific.compose.analytics.AnalyticsEvent
 import demo.terrific.compose.model.AssetDto
+import demo.terrific.compose.model.analytics.AuxData
 import demo.terrific.compose.style.VideoFeatureStyle
 import kotlin.math.absoluteValue
 
+@SuppressLint("FrequentlyChangingValue")
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun VideoCarousel(
@@ -45,7 +50,7 @@ fun VideoCarousel(
 
 
     if (assets.isEmpty()) {
-        CircularProgressIndicator()
+//        CircularProgressIndicator()
         return
     }
 
@@ -60,6 +65,34 @@ fun VideoCarousel(
         }
     }
 
+    LaunchedEffect(pagerState.currentPage) {
+        VideoSdk.analytics().trackEvent(
+            event = AnalyticsEvent.TimelineCarouselViewed,
+            auxData = AuxData(
+                assets = assets,
+                position = pagerState.currentPage,
+                fixedPosition = pagerState.currentPage
+            )
+        )
+    }
+//    LaunchedEffect(pagerState.currentPage) {
+//        val asset = assets.getOrNull(pagerState.currentPage) ?: return@LaunchedEffect
+//
+//        val assetType = when (asset.type) {
+//            "video" -> "video"
+//            "poll" -> "poll"
+//            else -> "unknown"
+//        }
+//
+//        VideoSdk.analytics().trackEvent(
+//            event = AnalyticsEvent.TimelineCarouselViewed,
+//            auxData = AuxData(
+//                assetType = assetType,
+//                position = pagerState.currentPage,
+//                fixedPosition = pagerState.currentPage
+//            )
+//        )
+//    }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -67,6 +100,7 @@ fun VideoCarousel(
             .clip(RoundedCornerShape(style.cornerRadius)),
         contentAlignment = Alignment.Center
     ) {
+
 
         HorizontalPager(
             state = pagerState,
@@ -86,30 +120,29 @@ fun VideoCarousel(
                 fraction = 1f - pageOffset.coerceIn(0f, 1f)
             )
 
-//            if (state[page].question.isNullOrEmpty()) {
-            VideoCard(
-                video = assets[page],
-                modifier = Modifier
-                    .graphicsLayer {
-                        scaleX = scale
-                        scaleY = scale
-                    },
-                player = players[page],
-                onVideoClick = onVideoClick
-            )
-//            } else {
-//                HorizontalPollItem(
-//                    video = state.videos[page],
-//                    modifier = Modifier
-//                        .graphicsLayer {
-//                            scaleX = scale
-//                            scaleY = scale
-//                        },
-//                    player = players[page],
-//                    onVideoClick = onVideoClick
-//                )
-//            }
+            val asset = assets[page]
 
+            when {
+                asset.pollData != null -> {
+                    PollCarouselItem(
+                        pollData = asset.pollData,
+                        assetId = asset.id,
+                        onClick = onVideoClick
+                    )
+                }
+                asset.media != null -> {
+                    VideoCard(
+                        video = assets[page],
+                        modifier = Modifier
+                            .graphicsLayer {
+                                scaleX = scale
+                                scaleY = scale
+                            },
+                        player = players[page],
+                        onVideoClick = onVideoClick
+                    )
+                }
+            }
         }
     }
 
