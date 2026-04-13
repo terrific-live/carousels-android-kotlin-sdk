@@ -13,7 +13,8 @@ internal class TerrificAnalyticsManager(
     private val storeId: String,
     private val parentUrl: String,
     private val sessionStorage: AnalyticsSessionStorage,
-    private val repository: TerrificAnalyticsRepository
+    private val repository: TerrificAnalyticsRepository,
+    private val analyticsListenerProvider: () -> VideoSdkAnalyticsListener?
 ) {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -28,6 +29,8 @@ internal class TerrificAnalyticsManager(
             name = event.name,
             auxData = auxData
         )
+
+        analyticsListenerProvider()?.onAnalyticsEventTracked(request)
 
         scope.launch {
             repository.sendUserEvent(storeId, request)

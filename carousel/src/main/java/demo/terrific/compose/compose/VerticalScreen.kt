@@ -73,7 +73,7 @@ fun VerticalScreen(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            CircularProgressIndicator()
+//            CircularProgressIndicator()
         }
         return
     }

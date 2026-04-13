@@ -25,8 +25,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import demo.terrific.compose.VideoSdk
-import demo.terrific.compose.model.AssetDto
+import demo.terrific.compose.analytics.AnalyticsEvent
 import demo.terrific.compose.model.PollDataDto
+import demo.terrific.compose.model.analytics.AuxData
 
 @Composable
 fun PollCarouselItem(
@@ -50,7 +51,13 @@ fun PollCarouselItem(
             )
             .padding(horizontal = 24.dp, vertical = 32.dp)
             .clickable {
-                onClick(assetId) // 🔥
+                onClick(assetId)
+                VideoSdk.analytics().trackEvent(
+                    event = AnalyticsEvent.TimelineCarouselClicked,
+                    auxData = AuxData(
+                        assetType = "poll",
+                    )
+                )
             }
     ) {
         Column(

@@ -78,6 +78,7 @@ dependencies {
     implementation("androidx.media3:media3-exoplayer:1.10.0")
     implementation("androidx.media3:media3-ui:1.10.0")
     implementation("androidx.test.espresso:espresso-core:3.7.0")
+    implementation("androidx.compose.foundation:foundation-layout:1.10.6")
 
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 

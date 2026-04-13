@@ -16,7 +16,10 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,119 +48,106 @@ fun VideoCarousel(
     style: VideoFeatureStyle,
     onVideoClick: (String) -> Unit
 ) {
-    val context = LocalContext.current
-    val pagerState = rememberPagerState { assets.size }
+
+//    AnalyticsDebugSheetScaffold {
 
 
-    if (assets.isEmpty()) {
+        val context = LocalContext.current
+        val pagerState = rememberPagerState { assets.size }
+
+
+        if (assets.isEmpty()) {
 //        CircularProgressIndicator()
         return
     }
 
-    val players = remember {
-        assets.map { video ->
-            ExoPlayer.Builder(context).build().apply {
-                video.media?.videoPreviewUrl?.let { setMediaItem(MediaItem.fromUri(it)) }
-                prepare()
-                playWhenReady = false
-                repeatMode = Player.REPEAT_MODE_ONE
+        val players = remember {
+            assets.map { video ->
+                ExoPlayer.Builder(context).build().apply {
+                    video.media?.videoPreviewUrl?.let { setMediaItem(MediaItem.fromUri(it)) }
+                    prepare()
+                    playWhenReady = false
+                    repeatMode = Player.REPEAT_MODE_ONE
+                }
             }
         }
-    }
 
-    LaunchedEffect(pagerState.currentPage) {
-        VideoSdk.analytics().trackEvent(
-            event = AnalyticsEvent.TimelineCarouselViewed,
-            auxData = AuxData(
-                assets = assets,
-                position = pagerState.currentPage,
-                fixedPosition = pagerState.currentPage
+        LaunchedEffect(pagerState.currentPage) {
+            VideoSdk.analytics().trackEvent(
+                event = AnalyticsEvent.TimelineCarouselViewed,
+                auxData = AuxData(
+                    assets = assets,
+                    position = pagerState.currentPage,
+                    fixedPosition = pagerState.currentPage
+                )
             )
-        )
-    }
-//    LaunchedEffect(pagerState.currentPage) {
-//        val asset = assets.getOrNull(pagerState.currentPage) ?: return@LaunchedEffect
-//
-//        val assetType = when (asset.type) {
-//            "video" -> "video"
-//            "poll" -> "poll"
-//            else -> "unknown"
-//        }
-//
-//        VideoSdk.analytics().trackEvent(
-//            event = AnalyticsEvent.TimelineCarouselViewed,
-//            auxData = AuxData(
-//                assetType = assetType,
-//                position = pagerState.currentPage,
-//                fixedPosition = pagerState.currentPage
-//            )
-//        )
-//    }
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .height(style.carouselHeight)
-            .clip(RoundedCornerShape(style.cornerRadius)),
-        contentAlignment = Alignment.Center
-    ) {
+        }
 
-
-        HorizontalPager(
-            state = pagerState,
-            contentPadding = PaddingValues(horizontal = 48.dp),
-            pageSpacing = 16.dp,
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-        ) { page ->
+                .height(style.carouselHeight)
+                .clip(RoundedCornerShape(style.cornerRadius)),
+            contentAlignment = Alignment.Center
+        ) {
 
-            val pageOffset =
-                ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction)
-                    .absoluteValue
+            HorizontalPager(
+                state = pagerState,
+                contentPadding = PaddingValues(horizontal = 48.dp),
+                pageSpacing = 16.dp,
+                modifier = Modifier
+                    .fillMaxSize()
+            ) { page ->
 
-            val scale = lerp(
-                start = 0.9f,
-                stop = 1f,
-                fraction = 1f - pageOffset.coerceIn(0f, 1f)
-            )
+                val pageOffset =
+                    ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction)
+                        .absoluteValue
 
-            val asset = assets[page]
+                val scale = lerp(
+                    start = 0.9f,
+                    stop = 1f,
+                    fraction = 1f - pageOffset.coerceIn(0f, 1f)
+                )
 
-            when {
-                asset.pollData != null -> {
-                    PollCarouselItem(
-                        pollData = asset.pollData,
-                        assetId = asset.id,
-                        onClick = onVideoClick
-                    )
-                }
-                asset.media != null -> {
-                    VideoCard(
-                        video = assets[page],
-                        modifier = Modifier
-                            .graphicsLayer {
-                                scaleX = scale
-                                scaleY = scale
-                            },
-                        player = players[page],
-                        onVideoClick = onVideoClick
-                    )
+                val asset = assets[page]
+
+                when {
+                    asset.pollData != null -> {
+                        PollCarouselItem(
+                            pollData = asset.pollData,
+                            assetId = asset.id,
+                            onClick = onVideoClick
+                        )
+                    }
+
+                    asset.media != null -> {
+                        VideoCard(
+                            video = assets[page],
+                            modifier = Modifier
+                                .graphicsLayer {
+                                    scaleX = scale
+                                    scaleY = scale
+                                },
+                            player = players[page],
+                            onVideoClick = onVideoClick
+                        )
+                    }
                 }
             }
         }
-    }
 
-    LaunchedEffect(pagerState.currentPage) {
-        players.forEachIndexed { index, player ->
-            player.playWhenReady = index == pagerState.currentPage
+        LaunchedEffect(pagerState.currentPage) {
+            players.forEachIndexed { index, player ->
+                player.playWhenReady = index == pagerState.currentPage
+            }
         }
-    }
 
-    DisposableEffect(Unit) {
-        onDispose {
-            players.forEach { it.release() }
+        DisposableEffect(Unit) {
+            onDispose {
+                players.forEach { it.release() }
+            }
         }
-    }
-
+//    }
 }
 
 @Composable
@@ -173,7 +163,13 @@ fun VideoCard(
             .clip(RoundedCornerShape(20.dp))
             .background(Color.Black)
             .clickable {
-                onVideoClick(video.id) // 🔥
+                onVideoClick(video.id)
+                VideoSdk.analytics().trackEvent(
+                    event = AnalyticsEvent.TimelineCarouselClicked,
+                    auxData = AuxData(
+                        assetType = "video",
+                    )
+                )
             }
     ) {
         AndroidView(

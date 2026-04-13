@@ -34,7 +34,7 @@ fun AssetCarousel(
     when {
         state.isLoading -> {
             Box(modifier = modifier.fillMaxSize()) {
-                CircularProgressIndicator()
+//                CircularProgressIndicator()
             }
         }
 
