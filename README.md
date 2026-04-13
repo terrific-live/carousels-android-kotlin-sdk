@@ -141,24 +141,7 @@ Retrofit API
 By default base url to fetch a data is 
 
 ```
-"https://terrific-staging-polls.web.app/"
-```
-You can change it to your own by adding this to your Application class
-
-### Example
-
-```kotlin
-class TerrificApp : Application() {
-
-    override fun onCreate() {
-        super.onCreate()
-        VideoSdk.initialize(
-            VideoSdkConfig(
-                baseUrl = "https://terrific-live-polls.web.app/"
-            )
-        )
-    }
-}
+"https://terrific-live-polls.web.app/"
 ```
 
 ---
