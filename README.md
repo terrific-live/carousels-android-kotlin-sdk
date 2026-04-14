@@ -35,7 +35,7 @@ dependencyResolutionManagement {
 ### 2. Add dependency
 
 ```kotlin
-implementation("com.github.terrific-live:carousels-android-kotlin-sdk:v1.0.8")
+implementation("com.github.terrific-live:carousels-android-kotlin-sdk:v1.0.9")
 ```
 ---
 
