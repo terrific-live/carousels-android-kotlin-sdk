@@ -33,27 +33,27 @@ fun AppRoot() {
 //        carouselId = "sQsA6UF3MwDfIz4TZXM7"
 //    )
     //
-    AssetCarousel(
-        storeId = "nzRdWaBc1JPk2XN3B9bp",
-        carouselId = "X9HIgIk6D3xXDLehqh7U"
-    )
+//    AssetCarousel(
+//        storeId = "nzRdWaBc1JPk2XN3B9bp",
+//        carouselId = "X9HIgIk6D3xXDLehqh7U"
+//    )
+//
+//    VideoSdk.setAnalyticsListener(
+//        object : VideoSdkAnalyticsListener {
+//            override fun onAnalyticsEventTracked(event: UserEventRequest) {
+//                Log.d("SDK_ANALYTICS", "Tracked: ${event.name}")
+//            }
+//        }
+//    )
 
-    VideoSdk.setAnalyticsListener(
-        object : VideoSdkAnalyticsListener {
-            override fun onAnalyticsEventTracked(event: UserEventRequest) {
-                Log.d("SDK_ANALYTICS", "Tracked: ${event.name}")
-            }
-        }
-    )
-
-    AssetCarousel(
-        storeId = "0bor4CHMEbm3M4Dluput",
-        carouselId = "HmUOF0rG4fO1v9U63t7Z",
-        style = VideoFeatureStyle(
-            carouselHeight = 15.dp,
-            cornerRadius = 0.dp
-        )
-
-    )
+//    AssetCarousel(
+//        storeId = "0bor4CHMEbm3M4Dluput",
+//        carouselId = "HmUOF0rG4fO1v9U63t7Z",
+//        style = VideoFeatureStyle(
+//            carouselHeight = 15.dp,
+//            cornerRadius = 0.dp
+//        )
+//
+//    )
 
 }
