@@ -11,7 +11,7 @@ data class AssetsResponse(
 data class AssetDto(
     val id: String,
     val name: String?,
-    val type: String,
+    val type: String?,
     val title: String?,
     val description: String?,
     val timestamp: String?,
@@ -41,3 +41,17 @@ data class MediaDto(
     val srcUrl: String?,
     val videoPreviewUrl: String?
 )
+
+@Serializable
+enum class AssetType(val type: String) {
+    POLL("poll"),
+    IMAGE("image"),
+    VIDEO("video");
+
+    companion object {
+        fun from(type: String): AssetType {
+            return entries.find { it.type == type }
+                ?: throw IllegalArgumentException("Unknown asset type: $type")
+        }
+    }
+}

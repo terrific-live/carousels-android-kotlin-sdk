@@ -1,4 +1,4 @@
-package demo.terrific.compose.compose
+package demo.terrific.compose.compose.horizontal
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

@@ -1,4 +1,4 @@
-package demo.terrific.compose.compose
+package demo.terrific.compose.compose.vertical
 
 import android.app.Activity
 import android.content.Intent
@@ -13,17 +13,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.filled.ThumbUpOffAlt
 import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material.icons.outlined.Share
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -50,6 +45,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import demo.terrific.compose.model.AssetDto
+import demo.terrific.compose.model.AssetType
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
@@ -115,21 +111,22 @@ private fun VerticalScreenPage(
     onPollOptionClick: (questionId: String, optionText: String) -> Unit,
     onBackClicked: () -> Unit,
 ) {
-    when {
-        asset.pollData != null -> {
-            PollScreen(
-                pollData = asset.pollData,
-                isLiked = isLiked,
-                onLikeClick = { onLikeClick(asset.id) },
-                onBackClicked = onBackClicked,
-                selectedOptionText = selectedPollAnswers[asset.pollData.questionId],
-                onOptionClick = { optionText ->
-                    onPollOptionClick(asset.pollData.questionId, optionText)
-                }
-            )
+    when (asset.type) {
+        AssetType.POLL.type -> {
+            asset.pollData?.let {
+                PollScreen(
+                    pollData = it,
+                    isLiked = isLiked,
+                    onLikeClick = { onLikeClick(asset.id) },
+                    onBackClicked = onBackClicked,
+                    selectedOptionText = selectedPollAnswers[asset.pollData.questionId],
+                    onOptionClick = { optionText ->
+                        onPollOptionClick(asset.pollData.questionId, optionText)
+                    }
+                )
+            }
         }
-
-        asset.media != null -> {
+        AssetType.VIDEO.type -> {
             FullscreenVideoScreen(
                 video = asset,
                 likedVideoIds = if (isLiked) setOf(asset.id) else emptySet(),
@@ -137,7 +134,9 @@ private fun VerticalScreenPage(
                 onBackClicked = onBackClicked
             )
         }
-
+        AssetType.IMAGE.type -> {
+            asset.media?.mobileUrl?.let { ImageAsset(url = it) }
+        }
         else -> {
             Box(
                 modifier = Modifier.fillMaxSize(),

@@ -1,11 +1,15 @@
 package demo.terrific
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
+import demo.terrific.compose.VideoSdk
+import demo.terrific.compose.analytics.VideoSdkAnalyticsListener
 import demo.terrific.compose.compose.AssetCarousel
+import demo.terrific.compose.model.analytics.UserEventRequest
 import demo.terrific.compose.style.VideoFeatureStyle
 import demo.terrific.ui.theme.TerrificTheme
 
@@ -28,14 +32,19 @@ fun AppRoot() {
 //        storeId = "1FEyyLAlBJY8000v5nfL",
 //        carouselId = "sQsA6UF3MwDfIz4TZXM7"
 //    )
+    //
+    AssetCarousel(
+        storeId = "nzRdWaBc1JPk2XN3B9bp",
+        carouselId = "X9HIgIk6D3xXDLehqh7U"
+    )
 
-//    VideoSdk.setAnalyticsListener(
-//        object : VideoSdkAnalyticsListener {
-//            override fun onAnalyticsEventTracked(event: UserEventRequest) {
-//                Log.d("SDK_ANALYTICS", "Tracked: ${event.name}")
-//            }
-//        }
-//    )
+    VideoSdk.setAnalyticsListener(
+        object : VideoSdkAnalyticsListener {
+            override fun onAnalyticsEventTracked(event: UserEventRequest) {
+                Log.d("SDK_ANALYTICS", "Tracked: ${event.name}")
+            }
+        }
+    )
 
     AssetCarousel(
         storeId = "0bor4CHMEbm3M4Dluput",
