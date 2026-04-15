@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "demo.terrific"
+    namespace = "terrific.sdk"
     compileSdk {
         version = release(36)
     }
@@ -53,6 +53,11 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
+
+
+//    implementation(project(":carousel"))
+
+
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
@@ -61,9 +66,21 @@ dependencies {
     implementation(libs.androidx.compose.navigation)
     implementation(libs.androidx.media3.transformer)
 
+//    implementation(libs.video.sdk)
+
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)
+    implementation(libs.material.icons.extended)
+
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.serialization)
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.logging)
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.retrofit.gson)
+
+//    implementation("com.github.terrific-live:carousels-android-kotlin-sdk:v1.0.4")
 
     implementation(libs.media3.exoplayer)
     implementation(libs.androidx.media3.ui)
