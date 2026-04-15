@@ -1,16 +1,9 @@
 package demo.terrific
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.unit.dp
-import demo.terrific.compose.VideoSdk
-import demo.terrific.compose.analytics.VideoSdkAnalyticsListener
-import demo.terrific.compose.compose.AssetCarousel
-import demo.terrific.compose.model.analytics.UserEventRequest
-import demo.terrific.compose.style.VideoFeatureStyle
 import demo.terrific.ui.theme.TerrificTheme
 
 class MainActivity : ComponentActivity() {
@@ -45,15 +38,10 @@ fun AppRoot() {
 //            }
 //        }
 //    )
-
+//
 //    AssetCarousel(
 //        storeId = "0bor4CHMEbm3M4Dluput",
-//        carouselId = "HmUOF0rG4fO1v9U63t7Z",
-//        style = VideoFeatureStyle(
-//            carouselHeight = 15.dp,
-//            cornerRadius = 0.dp
+//        carouselId = "HmUOF0rG4fO1v9U63t7Z"
 //        )
-//
-//    )
 
 }
