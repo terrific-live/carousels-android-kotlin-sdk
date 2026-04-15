@@ -1,6 +1,7 @@
 package demo.terrific.compose
 
 import android.content.Context
+import androidx.annotation.StringDef
 import demo.terrific.compose.analytics.TerrificAnalyticsManager
 import demo.terrific.compose.analytics.VideoSdkAnalyticsListener
 import demo.terrific.compose.network.TerrificAnalyticsApi
@@ -45,7 +46,7 @@ object VideoSdk {
         }.build()
 
         val retrofit = Retrofit.Builder()
-            .baseUrl("https://terrific-staging-polls.web.app/")
+            .baseUrl("https://terrific-live-polls.web.app/")
             .client(client)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
