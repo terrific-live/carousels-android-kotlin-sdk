@@ -47,8 +47,10 @@ fun AssetCarousel(
         state.screen is VideoScreen.Carousel -> {
             VideoCarousel(
                 assets = state.assets,
+                config = state.configDto,
                 style = style,
-                onVideoClick = controller::onVideoClick
+                onVideoClick = controller::onVideoClick,
+                onProductClick = controller::onProductClick
             )
         }
 
@@ -67,7 +69,8 @@ fun AssetCarousel(
                     controller.onLikeClick(id)
                 },
                 onPollOptionClick = controller::onPollOptionClick,
-                onBackClicked = controller::onBack
+                onBackClicked = controller::onBack,
+                onProductClick = controller::onProductClick
             )
         }
     }

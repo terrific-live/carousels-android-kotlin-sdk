@@ -4,6 +4,7 @@ import demo.terrific.compose.VideoSdk
 import demo.terrific.compose.analytics.AnalyticsEvent
 import demo.terrific.compose.compose.VideoScreen
 import demo.terrific.compose.model.AssetDto
+import demo.terrific.compose.model.CarouselConfigDto
 import demo.terrific.compose.model.analytics.AuxData
 import demo.terrific.compose.repository.VideoRepository
 import demo.terrific.compose.storage.likes.LikesStorage
@@ -13,7 +14,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlin.collections.mapNotNull
 
 internal class VideoFeatureController(
     private val repository: VideoRepository,
@@ -29,15 +29,15 @@ internal class VideoFeatureController(
     fun load(
         storeId: String,
         carouselId: String
-        ) {
+    ) {
         this.carouselId = carouselId
         scope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
 
             runCatching {
                 repository.getFeed(storeId, carouselId)
-            }.onSuccess { assets ->
-                val restoredAssets = assets.map { asset ->
+            }.onSuccess { resp ->
+                val restoredAssets = resp.assets.map { asset ->
                     val pollData = asset.pollData
 
                     if (pollData != null) {
@@ -96,7 +96,7 @@ internal class VideoFeatureController(
                 VideoSdk.analytics().trackEvent(
                     AnalyticsEvent.TimelineCarouselLoaded,
                     AuxData(
-                        assets = assets
+                        assets = resp.assets
                     )
                 )
             }.onFailure { throwable ->
@@ -168,11 +168,16 @@ internal class VideoFeatureController(
             )
         }
     }
+
+    fun onProductClick(product: String) {
+
+    }
 }
 
 internal data class VideoFeatureState(
     val isLoading: Boolean = false,
     val assets: List<AssetDto> = emptyList(),
+    val configDto: CarouselConfigDto? = null,
     val likedVideoIds: Set<String> = emptySet(),
     val selectedId: String = "",
     val screen: VideoScreen = VideoScreen.Carousel,

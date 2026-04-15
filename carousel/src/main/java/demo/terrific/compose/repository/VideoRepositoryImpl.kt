@@ -1,6 +1,7 @@
 package demo.terrific.compose.repository
 
 import demo.terrific.compose.model.AssetDto
+import demo.terrific.compose.model.AssetsResponse
 import demo.terrific.compose.network.VideoApi
 
 class VideoRepositoryImpl(
@@ -14,11 +15,11 @@ class VideoRepositoryImpl(
         ).assets
     }
 
-    override suspend fun getFeed(storeId: String, carouselId: String): List<AssetDto> {
+    override suspend fun getFeed(storeId: String, carouselId: String): AssetsResponse {
         return api.getVerticalAssets(
             storeId = storeId,
             displayId = carouselId
-        ).assets
+        )
     }
 
 }

@@ -1,13 +1,15 @@
+@file:Suppress("COMPOSE_APPLIER_CALL_MISMATCH")
+
 package demo.terrific.compose.compose.vertical
 
 import android.app.Activity
 import android.content.Intent
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.VerticalPager
@@ -21,16 +23,20 @@ import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -46,12 +52,12 @@ import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import demo.terrific.compose.model.AssetDto
 import demo.terrific.compose.model.AssetType
+import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
 import kotlin.time.ExperimentalTime
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun VerticalScreen(
     assets: List<AssetDto>,
@@ -61,22 +67,12 @@ fun VerticalScreen(
     videoId: String,
     onLikeClick: (String) -> Unit,
     onBackClicked: () -> Unit,
+    onProductClick: (String) -> Unit
 ) {
     HideSystemBars()
 
-    if (assets.isEmpty()) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-//            CircularProgressIndicator()
-        }
-        return
-    }
-
     val startIndex = remember(assets, videoId) {
-        val index = assets.indexOfFirst { it.id == videoId }
-        if (index >= 0) index else 0
+        assets.indexOfFirst { it.id == videoId }.takeIf { it >= 0 } ?: 0
     }
 
     val pagerState = rememberPagerState(
@@ -89,15 +85,15 @@ fun VerticalScreen(
         modifier = Modifier.fillMaxSize()
     ) { page ->
         val asset = assets[page]
-        val isLiked = likedVideos.contains(asset.id)
 
         VerticalScreenPage(
             asset = asset,
-            isLiked = isLiked,
+            isLiked = asset.id in likedVideos,
+            selectedPollAnswer = asset.pollData?.questionId?.let(selectedPollAnswers::get),
             onLikeClick = onLikeClick,
             onPollOptionClick = onPollOptionClick,
-            selectedPollAnswers = selectedPollAnswers,
-            onBackClicked = onBackClicked
+            onBackClicked = onBackClicked,
+            onProductClick = onProductClick
         )
     }
 }
@@ -106,37 +102,42 @@ fun VerticalScreen(
 private fun VerticalScreenPage(
     asset: AssetDto,
     isLiked: Boolean,
-    selectedPollAnswers: Map<String, String>,
+    selectedPollAnswer: String?,
     onLikeClick: (String) -> Unit,
     onPollOptionClick: (questionId: String, optionText: String) -> Unit,
     onBackClicked: () -> Unit,
+    onProductClick: (String) -> Unit,
 ) {
     when (asset.type) {
         AssetType.POLL.type -> {
-            asset.pollData?.let {
+            asset.pollData?.let { poll ->
                 PollScreen(
-                    pollData = it,
+                    asset = asset,
                     isLiked = isLiked,
                     onLikeClick = { onLikeClick(asset.id) },
                     onBackClicked = onBackClicked,
-                    selectedOptionText = selectedPollAnswers[asset.pollData.questionId],
+                    selectedOptionText = selectedPollAnswer,
                     onOptionClick = { optionText ->
-                        onPollOptionClick(asset.pollData.questionId, optionText)
+                        onPollOptionClick(poll.questionId, optionText)
                     }
                 )
             }
         }
+
         AssetType.VIDEO.type -> {
-            FullscreenVideoScreen(
+            FullscreenVideoPlayer(
                 video = asset,
-                likedVideoIds = if (isLiked) setOf(asset.id) else emptySet(),
-                onLikeClick = onLikeClick,
-                onBackClicked = onBackClicked
+                isLiked = isLiked,
+                onLikeClick = { onLikeClick(asset.id) },
+                onBackClicked = onBackClicked,
+                onProductClick = onProductClick
             )
         }
+
         AssetType.IMAGE.type -> {
             asset.media?.mobileUrl?.let { ImageAsset(url = it) }
         }
+
         else -> {
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -148,38 +149,21 @@ private fun VerticalScreenPage(
     }
 }
 
-
-@Composable
-fun FullscreenVideoScreen(
-    video: AssetDto,
-    likedVideoIds: Set<String>,
-    onLikeClick: (String) -> Unit,
-    onBackClicked: () -> Unit
-) {
-
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        // VIDEO
-        FullscreenVideoPlayer(video, likedVideoIds, onLikeClick, onBackClicked)
-        // OTHER UI
-
-    }
-}
-
-
 @androidx.annotation.OptIn(UnstableApi::class)
 @Composable
-fun FullscreenVideoPlayer(video: AssetDto,
-                          likedVideoIds: Set<String>,
-                          onLikeClick: (String) -> Unit,
-                          onBackClicked: () -> Unit) {
-
+fun FullscreenVideoPlayer(
+    video: AssetDto,
+    isLiked: Boolean,
+    onLikeClick: (String) -> Unit,
+    onBackClicked: () -> Unit,
+    onProductClick: (String) -> Unit
+) {
     val context = LocalContext.current
+    val products = video.products.orEmpty()
+    val hasProducts = products.isNotEmpty()
+    var progress by remember { mutableFloatStateOf(0f) }
 
-
-    val player = remember {
-
+    val player = remember(video.id) {
         ExoPlayer.Builder(context).build().apply {
             video.media?.mobileUrl?.let { setMediaItem(MediaItem.fromUri(it)) }
             prepare()
@@ -188,43 +172,82 @@ fun FullscreenVideoPlayer(video: AssetDto,
         }
     }
 
-    DisposableEffect(Unit) {
+    DisposableEffect(player) {
         onDispose { player.release() }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        AndroidView(
-            factory = {
-                PlayerView(it).apply {
-                    this.player = player
-                    useController = false
-                    resizeMode =
-                        AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-                }
-            },
-            modifier = Modifier.fillMaxSize()
-        )
+    LaunchedEffect(player) {
+        while (true) {
+            val duration = player.duration
+            val position = player.currentPosition
+
+            progress = if (duration > 0) {
+                (position.toFloat() / duration.toFloat()).coerceIn(0f, 1f)
+            } else {
+                0f
+            }
+
+            delay(200)
+        }
     }
 
-    VideoOverlay(video, likedVideoIds, onLikeClick, onBackClicked = onBackClicked, player)
-}
 
-@Composable
-fun HideSystemBars() {
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+            ) {
+                AndroidView(
+                    factory = {
+                        PlayerView(it).apply {
+                            this.player = player
+                            useController = false
+                            resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize()
+                )
 
-    val activity = LocalContext.current as Activity
+                VideoOverlay(
+                    video = video,
+                    isLiked = isLiked,
+                    onLikeClick = onLikeClick,
+                    onBackClicked = onBackClicked,
+                    player = player
+                )
 
-    DisposableEffect(Unit) {
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .padding(4.dp)
+                        .height(6.dp),
+                )
+            }
 
-        val controller = WindowCompat.getInsetsController(
-            activity.window,
-            activity.window.decorView
-        )
-
-        controller.hide(WindowInsetsCompat.Type.statusBars())
-
-        onDispose {
-            controller.show(WindowInsetsCompat.Type.statusBars())
+            if (hasProducts) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color.Transparent,
+                                    Color.Black.copy(alpha = 0.35f)
+                                )
+                            )
+                        )
+                        .padding(horizontal = 12.dp, vertical = 12.dp)
+                ) {
+                    TimelineProductsRow(
+                        products = products,
+                        onProductClick = onProductClick
+                    )
+                }
+            }
         }
     }
 }
@@ -232,7 +255,7 @@ fun HideSystemBars() {
 @Composable
 fun VideoOverlay(
     video: AssetDto,
-    likedVideoIds: Set<String>,
+    isLiked: Boolean,
     onLikeClick: (String) -> Unit,
     onBackClicked: () -> Unit,
     player: ExoPlayer
@@ -241,7 +264,7 @@ fun VideoOverlay(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(vertical = 32.dp, horizontal = 32.dp)
             .zIndex(1f)
     ) {
 
@@ -250,7 +273,7 @@ fun VideoOverlay(
             onClick = { onBackClicked() },
             modifier = Modifier.align(Alignment.TopEnd)
         ) {
-            Icon(Icons.Default.Close, contentDescription = "Close")
+            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
         }
 
 
@@ -271,8 +294,6 @@ fun VideoOverlay(
         }
 
         var isMuted by remember { mutableStateOf(false) }
-
-        val isLiked = likedVideoIds.contains(video.id)
 
         // RIGHT ACTIONS
         Column(
@@ -340,6 +361,27 @@ fun VideoOverlay(
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.White
             )
+        }
+    }
+}
+
+
+@Composable
+fun HideSystemBars() {
+
+    val activity = LocalContext.current as Activity
+
+    DisposableEffect(Unit) {
+
+        val controller = WindowCompat.getInsetsController(
+            activity.window,
+            activity.window.decorView
+        )
+
+        controller.hide(WindowInsetsCompat.Type.statusBars())
+
+        onDispose {
+            controller.show(WindowInsetsCompat.Type.statusBars())
         }
     }
 }
