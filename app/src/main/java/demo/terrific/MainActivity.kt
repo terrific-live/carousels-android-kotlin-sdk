@@ -41,7 +41,12 @@ fun AppRoot() {
 //
 //    AssetCarousel(
 //        storeId = "0bor4CHMEbm3M4Dluput",
-//        carouselId = "HmUOF0rG4fO1v9U63t7Z"
+//        carouselId = "HmUOF0rG4fO1v9U63t7Z",
+//        style = VideoFeatureStyle(
+//            carouselHeight = 15.dp,
+//            cornerRadius = 0.dp
 //        )
+//
+//    )
 
 }

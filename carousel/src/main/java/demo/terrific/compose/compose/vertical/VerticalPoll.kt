@@ -1,5 +1,6 @@
 package demo.terrific.compose.compose.vertical
 
+import android.content.Intent
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -19,38 +20,65 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.ThumbUp
+import androidx.compose.material.icons.filled.ThumbUpOffAlt
 import androidx.compose.material.icons.outlined.BarChart
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import demo.terrific.compose.model.PollDataDto
+import androidx.compose.ui.zIndex
+import demo.terrific.compose.model.AssetDto
 import demo.terrific.compose.model.PollOptionDto
+import kotlinx.coroutines.delay
 
 
 @Composable
 fun PollScreen(
-    pollData: PollDataDto,
+    asset: AssetDto,
     selectedOptionText: String?,
     onOptionClick: (String) -> Unit,
     onBackClicked: () -> Unit,
     isLiked: Boolean,
-    onLikeClick: () -> Unit,
+    onLikeClick: (String) -> Unit,
 ) {
     val hasVoted = selectedOptionText != null
+    var progress by remember { mutableFloatStateOf(0f) }
+
+    LaunchedEffect(asset.id) {
+        val duration = 3000L // 3 секунди
+        val startTime = System.currentTimeMillis()
+
+        while (true) {
+            val elapsed = System.currentTimeMillis() - startTime
+            progress = (elapsed.toFloat() / duration).coerceIn(0f, 1f)
+
+            if (progress >= 1f) break
+
+            delay(16) // ~60fps
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -64,18 +92,6 @@ fun PollScreen(
                 )
             )
     ) {
-        IconButton(
-            onClick = onBackClicked,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(24.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Close,
-                contentDescription = null,
-                tint = Color.White
-            )
-        }
 
         Column(
             modifier = Modifier
@@ -85,24 +101,26 @@ fun PollScreen(
         ) {
             Spacer(modifier = Modifier.height(90.dp))
 
-            Text(
-                text = pollData.question,
-                color = Color.White,
-                fontSize = 24.sp,
-                fontStyle = FontStyle.Italic,
-                textAlign = TextAlign.Center
-            )
+            asset.pollData?.question?.let {
+                Text(
+                    text = it,
+                    color = Color.White,
+                    fontSize = 24.sp,
+                    fontStyle = FontStyle.Italic,
+                    textAlign = TextAlign.Center
+                )
+            }
 
             Spacer(modifier = Modifier.height(32.dp))
 
             Column(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                pollData.options.forEach { option ->
+                asset.pollData?.options?.forEach { option ->
                     if (hasVoted) {
                         PollResultOption(
                             option = option,
-                            options = pollData.options,
+                            options = asset.pollData.options,
                             isSelected = option.text == selectedOptionText
                         )
                     } else {
@@ -115,28 +133,22 @@ fun PollScreen(
             }
         }
 
-        Column(
+        LinearProgressIndicator(
+            progress = { progress },
+            color = Color.Blue,
             modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 20.dp, bottom = 140.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
-            IconButton(onClick = onLikeClick) {
-                Icon(
-                    imageVector = if (isLiked) Icons.Default.Favorite else Icons.Outlined.ThumbUp,
-                    contentDescription = null,
-                    tint = Color.White
-                )
-            }
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 32.dp)
+                .height(4.dp),
+        )
 
-            IconButton(onClick = { }) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Outlined.Send,
-                    contentDescription = null,
-                    tint = Color.White
-                )
-            }
-        }
+        PollOverlay(
+            asset = asset,
+            isLiked = isLiked,
+            onLikeClick = onLikeClick,
+            onBackClicked = onBackClicked
+        )
     }
 }
 
@@ -340,6 +352,100 @@ private fun PollResultOption(
                 color = Color(0xFF1F1F1F),
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+@Composable
+fun PollOverlay(
+    asset: AssetDto,
+    isLiked: Boolean,
+    onLikeClick: (String) -> Unit,
+    onBackClicked: () -> Unit
+) {
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(vertical = 64.dp, horizontal = 32.dp)
+            .zIndex(1f)
+    ) {
+
+        // CLOSE BUTTON
+        IconButton(
+            onClick = { onBackClicked() },
+            modifier = Modifier.align(Alignment.TopEnd)
+        ) {
+            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+        }
+
+
+        val formatted = remember(asset.timestamp) {
+            asset.timestamp?.toFormatted()
+        }
+
+        // DATE
+
+        if (formatted?.isNotEmpty() == true) {
+            Text(
+                text = formatted,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .background(Color.White.copy(alpha = 0.8f))
+                    .padding(6.dp)
+            )
+        }
+
+        // RIGHT ACTIONS
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomEnd),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+
+            IconButton(onClick = { onLikeClick(asset.id) }) {
+                Icon(imageVector = if (isLiked) Icons.Default.ThumbUp else Icons.Default.ThumbUpOffAlt,
+                    contentDescription = "Like",
+                    tint = if (isLiked) Color.White else Color.White)
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            val context = LocalContext.current
+
+            IconButton(
+                onClick = {
+                    val intent = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TEXT, asset.media?.mobileUrl)
+                    }
+                    context.startActivity(Intent.createChooser(intent, "Share"))
+                }
+            ) {
+                Icon(Icons.Outlined.Share, contentDescription = "Share", tint = Color.White)
+            }
+        }
+
+        // TITLE + DESCRIPTION
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(end = 80.dp)
+        ) {
+
+            Text(
+                text = asset.title ?: "",
+                style = MaterialTheme.typography.titleMedium,
+                color = Color.White
+            )
+
+            Spacer(Modifier.height(6.dp))
+
+            Text(
+                text = asset.description ?: "",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.White
             )
         }
     }
