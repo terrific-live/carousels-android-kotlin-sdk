@@ -41,6 +41,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import demo.terrific.compose.VideoSdk
 import demo.terrific.compose.analytics.AnalyticsEvent
+import demo.terrific.compose.compose.TimelineProductCard
 import demo.terrific.compose.model.AssetDto
 import demo.terrific.compose.model.AssetType
 import demo.terrific.compose.model.CarouselConfigDto
