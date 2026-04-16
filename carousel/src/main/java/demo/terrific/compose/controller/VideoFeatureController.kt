@@ -2,7 +2,7 @@ package demo.terrific.compose.controller
 
 import demo.terrific.compose.VideoSdk
 import demo.terrific.compose.analytics.AnalyticsEvent
-import demo.terrific.compose.compose.VideoScreen
+import demo.terrific.compose.compose.common.VideoScreen
 import demo.terrific.compose.model.AssetDto
 import demo.terrific.compose.model.CarouselConfigDto
 import demo.terrific.compose.model.analytics.AuxData

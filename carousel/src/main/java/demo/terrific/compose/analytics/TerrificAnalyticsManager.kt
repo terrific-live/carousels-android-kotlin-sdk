@@ -32,9 +32,9 @@ internal class TerrificAnalyticsManager(
 
         analyticsListenerProvider()?.onAnalyticsEventTracked(request)
 
-        scope.launch {
-            repository.sendUserEvent(storeId, request)
-        }
+//        scope.launch {
+//            repository.sendUserEvent(storeId, request)
+//        }
     }
 
     fun trackTimelineAssetViewStarted(

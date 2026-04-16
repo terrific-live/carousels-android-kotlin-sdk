@@ -33,7 +33,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import coil.compose.AsyncImage
-import demo.terrific.compose.compose.toComposeColorOrNull
+import demo.terrific.compose.compose.horizontal.toComposeColorOrNull
 import demo.terrific.compose.model.ProductDto
 
 
@@ -92,7 +92,7 @@ fun TimelineProductCardFullscreen(
                 model = product.imageUrl,
                 contentDescription = product.name,
                 modifier = Modifier
-                    .size(96.dp)
+                    .size(84.dp)
                     .clip(RoundedCornerShape(16.dp)),
                 contentScale = ContentScale.Crop
             )
@@ -117,7 +117,7 @@ fun TimelineProductCardFullscreen(
                         text = it,
                         color = textColor.copy(alpha = 0.9f),
                         fontSize = 16.sp,
-                        maxLines = 2,
+                        maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 }

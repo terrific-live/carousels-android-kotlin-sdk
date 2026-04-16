@@ -19,71 +19,98 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import demo.terrific.compose.VideoSdk
 import demo.terrific.compose.analytics.AnalyticsEvent
-import demo.terrific.compose.model.PollDataDto
+import demo.terrific.compose.model.AssetDto
 import demo.terrific.compose.model.analytics.AuxData
 
 @Composable
 fun PollCarouselItem(
-    pollData: PollDataDto,
+    asset: AssetDto,
     assetId: String,
     onClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+
     Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .aspectRatio(9f / 16f)
-            .clip(RoundedCornerShape(28.dp))
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
+        modifier = Modifier
+            .fillMaxSize()
+    ) {
+
+
+        AsyncImage(
+            model = asset.background?.imageUrl,
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.FillBounds
+        )
+
+        val backgroundModifier = if (asset.background == null) {
+            Modifier.background(
+                Brush.verticalGradient(
+                    listOf(
                         Color(0xFFA61E2C),
                         Color(0xFF233B7B)
                     )
                 )
             )
-            .padding(horizontal = 24.dp, vertical = 32.dp)
-            .clickable {
-                onClick(assetId)
-                VideoSdk.analytics().trackEvent(
-                    event = AnalyticsEvent.TimelineCarouselClicked,
-                    auxData = AuxData(
-                        assetType = "poll",
+        } else {
+            Modifier
+        }
+
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .aspectRatio(9f / 16f)
+                .clip(RoundedCornerShape(28.dp))
+                .then(backgroundModifier)
+                .padding(horizontal = 24.dp, vertical = 32.dp)
+                .clickable {
+                    onClick(assetId)
+                    VideoSdk.analytics().trackEvent(
+                        event = AnalyticsEvent.TimelineCarouselClicked,
+                        auxData = AuxData(
+                            assetType = "poll",
+                        )
                     )
-                )
-            }
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally
+                },
+            contentAlignment = Alignment.Center
         ) {
-            Spacer(modifier = Modifier.height(80.dp))
 
-            Text(
-                text = pollData.question,
-                color = Color.White,
-                fontSize = 20.sp,
-                fontStyle = FontStyle.Italic,
-                textAlign = TextAlign.Center,
-                lineHeight = 28.sp,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(36.dp))
 
             Column(
-                verticalArrangement = Arrangement.spacedBy(24.dp),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                pollData.options.forEach { option ->
-                    PollOptionStatic(text = option.text)
+                Spacer(modifier = Modifier.height(24.dp))
+
+                asset.pollData?.question?.let {
+                    Text(
+                        text = it,
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontStyle = FontStyle.Italic,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    asset.pollData?.options?.forEach { option ->
+                        PollOptionStatic(text = option.text)
+                    }
                 }
             }
         }
@@ -98,7 +125,7 @@ private fun PollOptionStatic(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(74.dp)
+            .height(48.dp)
             .clip(RoundedCornerShape(14.dp))
             .background(Color(0xFFF1ECEF)),
         contentAlignment = Alignment.CenterStart
@@ -106,7 +133,7 @@ private fun PollOptionStatic(
         Text(
             text = text,
             color = Color(0xFF303030),
-            fontSize = 18.sp,
+            fontSize = 14.sp,
             modifier = Modifier.padding(horizontal = 28.dp),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
