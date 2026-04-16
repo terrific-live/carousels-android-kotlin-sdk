@@ -4,6 +4,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 data class VideoFeatureStyle(
+    val carouselHeight: Dp = 500.dp,
     val pageHeight: Dp = 700.dp,
     val cornerRadius: Dp = 24.dp,
     val pagerHorizontalPadding: Dp = 48.dp,

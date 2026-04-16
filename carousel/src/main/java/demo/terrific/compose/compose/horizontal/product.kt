@@ -1,4 +1,4 @@
-package demo.terrific.compose.compose
+package demo.terrific.compose.compose.horizontal
 
 import android.annotation.SuppressLint
 import android.content.Intent
@@ -54,7 +54,7 @@ fun TimelineProductCard(
     ) {
         Row(
             modifier = Modifier
-                .padding(horizontal = 12.dp, vertical = 10.dp),
+                .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
 
@@ -68,7 +68,7 @@ fun TimelineProductCard(
                 contentScale = ContentScale.Crop
             )
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(8.dp))
 
             Column(
                 modifier = Modifier.weight(1f),
@@ -86,7 +86,7 @@ fun TimelineProductCard(
                 product.description
                     ?.takeIf { it.isNotBlank() }
                     ?.let {
-                        Spacer(modifier = Modifier.height(4.dp))
+//                        Spacer(modifier = Modifier.height(4.dp))
 
                         Text(
                             text = it,
@@ -100,13 +100,13 @@ fun TimelineProductCard(
                 product.badge?.text
                     ?.takeIf { it.isNotBlank() }
                     ?.let {
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
 
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(badgeColor)
-                                .padding(horizontal = 10.dp, vertical = 4.dp)
+                                .padding(horizontal = 10.dp, vertical = 2.dp)
                         ) {
                             Text(
                                 text = it,

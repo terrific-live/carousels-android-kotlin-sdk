@@ -17,14 +17,12 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ThumbUp
-import androidx.compose.material.icons.filled.ThumbUpOffAlt
 import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.VolumeUp
-import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -39,7 +37,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.zIndex
 import androidx.core.view.WindowCompat
@@ -50,6 +52,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
+import demo.terrific.R
 import demo.terrific.compose.model.AssetDto
 import demo.terrific.compose.model.AssetType
 import kotlinx.coroutines.delay
@@ -135,7 +138,15 @@ private fun VerticalScreenPage(
         }
 
         AssetType.IMAGE.type -> {
-            asset.media?.mobileUrl?.let { ImageAsset(url = it) }
+            asset.media?.mobileUrl?.let {
+                ImageAsset(
+                    asset = asset,
+                    isLiked = isLiked,
+                    onLikeClick = { onLikeClick(asset.id) },
+                    onBackClicked = onBackClicked,
+                    onProductClick = onProductClick
+                )
+            }
         }
 
         else -> {
@@ -197,8 +208,10 @@ fun FullscreenVideoPlayer(
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .fillMaxWidth()
+                    .fillMaxSize()
+//                    .aspectRatio(9f / 16f)
             ) {
+
                 AndroidView(
                     factory = {
                         PlayerView(it).apply {
@@ -303,9 +316,15 @@ fun VideoOverlay(
         ) {
 
             IconButton(onClick = { onLikeClick(video.id) }) {
-                Icon(imageVector = if (isLiked) Icons.Default.ThumbUp else Icons.Default.ThumbUpOffAlt,
+                Icon(
+                    imageVector = if (isLiked) {
+                        Icons.Filled.ThumbUp
+                    } else {
+                        Icons.Outlined.ThumbUp
+                    },
                     contentDescription = "Like",
-                    tint = if (isLiked) Color.Red else Color.White)
+                    tint = Color.White
+                )
             }
 
             Spacer(Modifier.height(12.dp))
@@ -321,7 +340,11 @@ fun VideoOverlay(
                     context.startActivity(Intent.createChooser(intent, "Share"))
                 }
             ) {
-                Icon(Icons.Outlined.Share, contentDescription = "Share", tint = Color.White)
+                Icon(
+                    painter = painterResource(R.drawable.ic_share),
+                    contentDescription = "Share",
+                    tint = Color.White
+                )
             }
 
 
@@ -348,19 +371,31 @@ fun VideoOverlay(
                 .padding(end = 80.dp)
         ) {
 
-            Text(
-                text = video.title ?: "",
-                style = MaterialTheme.typography.titleMedium,
-                color = Color.White
-            )
+            video.title?.let {
+                Text(
+                    text = it,
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    lineHeight = 24.sp,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
 
             Spacer(Modifier.height(6.dp))
 
-            Text(
-                text = video.description ?: "",
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.White
-            )
+            video.description?.let {
+                Text(
+                    text = it,
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                    lineHeight = 24.sp,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
     }
 }
@@ -405,7 +440,7 @@ fun String.toFormatted(): String {
 
         val date = inputFormat.parse(this) ?: return this
         outputFormat.format(date)
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         this
     }
 }

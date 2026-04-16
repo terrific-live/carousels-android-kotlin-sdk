@@ -5,6 +5,7 @@ package demo.terrific.compose.compose.horizontal
 import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -27,14 +28,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.util.lerp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
@@ -42,12 +41,11 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import demo.terrific.compose.VideoSdk
 import demo.terrific.compose.analytics.AnalyticsEvent
-import demo.terrific.compose.compose.TimelineProductCard
 import demo.terrific.compose.model.AssetDto
+import demo.terrific.compose.model.AssetType
 import demo.terrific.compose.model.CarouselConfigDto
 import demo.terrific.compose.model.analytics.AuxData
 import demo.terrific.compose.style.VideoFeatureStyle
-import kotlin.math.absoluteValue
 
 @SuppressLint("FrequentlyChangingValue")
 @Composable
@@ -86,100 +84,99 @@ fun VideoCarousel(
         }
     }
 
-    Box(
+//    Box(
+//        modifier = Modifier.fillMaxSize(),
+//        contentAlignment = Alignment.Center
+//    ) {
+//        HorizontalPager(
+//            state = pagerState,
+//            contentPadding = PaddingValues(horizontal = style.pagerHorizontalPadding),
+//            pageSpacing = style.pagerPageSpacing,
+//            modifier = Modifier
+//                .fillMaxSize()
+//                .height(style.pageHeight)
+//        ) { page ->
+
+//    Column() {
+//
+//        config?.name?.let {
+//            Text(
+//                text = it,
+//                color = Color.White,
+//                fontSize = 20.sp,
+//                fontWeight = FontWeight.SemiBold,
+//                lineHeight = 24.sp,
+//                maxLines = 3,
+//                overflow = TextOverflow.Ellipsis
+//            )
+//        }
+//
+
+    HorizontalPager(
+        state = pagerState,
+        contentPadding = PaddingValues(horizontal = 32.dp),
+        pageSpacing = 8.dp,
         modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        HorizontalPager(
-            state = pagerState,
-            contentPadding = PaddingValues(horizontal = style.pagerHorizontalPadding),
-            pageSpacing = style.pagerPageSpacing,
+        verticalAlignment = Alignment.CenterVertically
+    ) { page ->
+        val asset = assets[page]
+        val firstProduct = asset.products?.firstOrNull()
+
+        val productHeight = style.pageHeight * style.productHeightFraction
+        val hasProduct = firstProduct != null
+
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(style.pageHeight)
-        ) { page ->
-            val asset = assets[page]
-            val firstProduct = asset.products?.firstOrNull()
-
-            val pageOffset =
-                ((pagerState.currentPage - page) + pagerState.currentPageOffsetFraction)
-                    .absoluteValue
-
-            val scale = lerp(
-                start = 0.9f,
-                stop = 1f,
-                fraction = 1f - pageOffset.coerceIn(0f, 1f)
-            )
-
-            val productHeight = style.pageHeight * style.productHeightFraction
-            val hasProduct = firstProduct != null
-
-            val assetHeight = if (hasProduct) {
-                style.pageHeight - productHeight - style.productSpacing
-            } else {
-                style.pageHeight
-            }
-
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
+                .height(style.carouselHeight)
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .aspectRatio(9f / 16f)
+                    .clip(RoundedCornerShape(style.cornerRadius))
             ) {
 
-                config?.name?.let {
-                    Text(
-                        text = it,
-                        color = Color.White,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        lineHeight = 24.sp,
-                        maxLines = 3,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(assetHeight)
-                        .graphicsLayer {
-                            scaleX = scale
-                            scaleY = scale
-                        }
-                        .clip(RoundedCornerShape(style.cornerRadius))
-                ) {
-                    when {
-                        asset.pollData != null -> {
-                            PollCarouselItem(
-                                pollData = asset.pollData,
-                                assetId = asset.id,
-                                onClick = onVideoClick,
-                                modifier = Modifier.fillMaxSize()
-                            )
-                        }
+                when (asset.type) {
+                    AssetType.POLL.type -> {
+                        PollCarouselItem(
+                            asset = asset,
+                            assetId = asset.id,
+                            onClick = onVideoClick,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
 
-                        asset.media != null -> {
-                            VideoCard(
-                                video = asset,
-                                modifier = Modifier.fillMaxSize().height(assetHeight),
-                                player = players[page],
-                                onVideoClick = onVideoClick,
-                                textBottomPadding = if (hasProduct) 68.dp else 20.dp
-                            )
-                        }
+                    AssetType.VIDEO.type -> {
+                        VideoCard(
+                            video = asset,
+                            player = players[page],
+                            onVideoClick = onVideoClick,
+                            textBottomPadding = if (hasProduct) 68.dp else 20.dp
+                        )
+                    }
 
+                    AssetType.IMAGE.type -> {
+                        CarouselImage(
+                            asset = asset,
+                            onVideoClick = onVideoClick
+                        )
                     }
                 }
+            }
 
-                if (firstProduct != null) {
-                    Spacer(modifier = Modifier.height(style.productSpacing))
+            if (firstProduct != null) {
+                Spacer(modifier = Modifier.height(style.productSpacing))
 
-                    TimelineProductCard(
-                        product = firstProduct,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(productHeight),
-                        onClick = onProductClick
-                    )
-                }
+                TimelineProductCard(
+                    product = firstProduct,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(productHeight),
+                    onClick = onProductClick
+                )
             }
         }
     }

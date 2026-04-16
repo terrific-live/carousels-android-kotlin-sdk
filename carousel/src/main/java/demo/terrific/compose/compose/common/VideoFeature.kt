@@ -1,4 +1,4 @@
-package demo.terrific.compose.compose
+package demo.terrific.compose.compose.common
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Box
