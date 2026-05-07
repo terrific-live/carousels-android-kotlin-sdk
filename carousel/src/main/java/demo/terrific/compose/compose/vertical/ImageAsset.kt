@@ -9,13 +9,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -25,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -37,16 +38,22 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
 import demo.terrific.R
+import demo.terrific.compose.compose.common.DateTimeBadge
+import demo.terrific.compose.compose.common.VideoProgressBar
+import demo.terrific.compose.compose.common.toFormatted
 import demo.terrific.compose.model.AssetDto
+import demo.terrific.compose.style.VideoFeatureStyle
+import demo.terrific.compose.style.withSdkFont
 import kotlinx.coroutines.delay
 
 @Composable
 fun ImageAsset(
     asset: AssetDto,
+    timestampFormat: String?,
     isLiked: Boolean,
     onLikeClick: (String) -> Unit,
     onBackClicked: () -> Unit,
-    onProductClick: (String) -> Unit
+    style: VideoFeatureStyle
 ) {
     val products = asset.products.orEmpty()
     val hasProducts = products.isNotEmpty()
@@ -68,41 +75,55 @@ fun ImageAsset(
 
 
     Box(modifier = Modifier.fillMaxSize()) {
-        asset.background?.let {
-            AsyncImage(
-                model = it.imageUrl,
-                contentDescription = "image",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize()
-            )
-        }
         Column(modifier = Modifier.fillMaxSize()) {
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
             ) {
+
+                asset.background?.let {
+                    AsyncImage(
+                        model = it.imageUrl,
+                        contentDescription = "background",
+                        modifier = Modifier
+                            .fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
                 AsyncImage(
                     model = asset.media?.mobileUrl,
                     contentDescription = "image",
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
+                    modifier = if (asset.background != null) {
+                        Modifier
+                            .fillMaxSize()
+                            .padding(16.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                    } else {
+                        Modifier
+                            .fillMaxSize()
+                    }
                 )
 
                 ImageOverlay(
                     asset = asset,
+                    timestampFormat = timestampFormat,
                     isLiked = isLiked,
                     onLikeClick = onLikeClick,
-                    onBackClicked = onBackClicked
+                    onBackClicked = onBackClicked,
+                    style = style
                 )
 
-                LinearProgressIndicator(
-                    progress = { progress },
+                VideoProgressBar(
+                    progress = progress,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
-                        .padding(4.dp)
-                        .height(6.dp),
+                        .padding(start = 24.dp, top = 0.dp, end = 24.dp, bottom = 32.dp),
+                    height = 8.dp,
+                    trackColor = Color.White.copy(alpha = 0.28f),
+                    progressColor = Color.White
                 )
             }
 
@@ -122,7 +143,7 @@ fun ImageAsset(
                 ) {
                     TimelineProductsRow(
                         products = products,
-                        onProductClick = onProductClick
+                        style = style
                     )
                 }
             }
@@ -133,15 +154,17 @@ fun ImageAsset(
 @Composable
 fun ImageOverlay(
     asset: AssetDto,
+    timestampFormat: String?,
     isLiked: Boolean,
     onLikeClick: (String) -> Unit,
-    onBackClicked: () -> Unit
+    onBackClicked: () -> Unit,
+    style: VideoFeatureStyle
 ) {
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(vertical = 32.dp, horizontal = 32.dp)
+            .padding(start = 32.dp, end = 32.dp, top = 32.dp, bottom = 48.dp)
             .zIndex(1f)
     ) {
 
@@ -154,19 +177,11 @@ fun ImageOverlay(
         }
 
         val formatted = remember(asset.timestamp) {
-            asset.timestamp?.toFormatted()
+            timestampFormat?.let { asset.timestamp?.toFormatted(it) }
         }
 
-        // DATE
-
         if (formatted?.isNotEmpty() == true) {
-            Text(
-                text = formatted,
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .background(Color.White.copy(alpha = 0.8f))
-                    .padding(6.dp)
-            )
+            DateTimeBadge(formatted)
         }
 
         // RIGHT ACTIONS
@@ -221,11 +236,11 @@ fun ImageOverlay(
                 Text(
                     text = it,
                     color = Color.White,
-                    fontSize = 20.sp,
                     fontWeight = FontWeight.SemiBold,
                     lineHeight = 24.sp,
                     maxLines = 3,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    style = style.titleTextStyle.withSdkFont(style.fontFamily)
                 )
             }
 
@@ -235,11 +250,11 @@ fun ImageOverlay(
                 Text(
                     text = it,
                     color = Color.White,
-                    fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
                     lineHeight = 24.sp,
                     maxLines = 3,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    style = style.subtitleTextStyle.withSdkFont(style.fontFamily)
                 )
             }
         }

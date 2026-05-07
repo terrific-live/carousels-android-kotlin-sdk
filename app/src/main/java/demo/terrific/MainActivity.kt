@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.Composable
+import demo.terrific.compose.compose.common.AssetCarousel
 import demo.terrific.ui.theme.TerrificTheme
 
 class MainActivity : ComponentActivity() {
@@ -26,10 +27,10 @@ fun AppRoot() {
 //        carouselId = "sQsA6UF3MwDfIz4TZXM7"
 //    )
     //
-//    AssetCarousel(
-//        storeId = "nzRdWaBc1JPk2XN3B9bp",
-//        carouselId = "X9HIgIk6D3xXDLehqh7U"
-//    )
+    AssetCarousel(
+        storeId = "nzRdWaBc1JPk2XN3B9bp",
+        carouselId = "X9HIgIk6D3xXDLehqh7U"
+    )
 //
 //    VideoSdk.setAnalyticsListener(
 //        object : VideoSdkAnalyticsListener {
@@ -43,6 +44,4 @@ fun AppRoot() {
 //        storeId = "0bor4CHMEbm3M4Dluput",
 //        carouselId = "HmUOF0rG4fO1v9U63t7Z"
 //        )
-
-
 }

@@ -47,10 +47,10 @@ fun AssetCarousel(
         state.screen is VideoScreen.Carousel -> {
             VideoCarousel(
                 assets = state.assets,
+                timestampFormat = state.timestampFormat,
                 config = state.configDto,
                 style = style,
-                onVideoClick = controller::onVideoClick,
-                onProductClick = controller::onProductClick
+                onVideoClick = controller::onVideoClick
             )
         }
 
@@ -62,6 +62,7 @@ fun AssetCarousel(
 
             VerticalScreen(
                 assets = state.assets,
+                timestampFormat = state.timestampFormat,
                 likedVideos = state.likedVideoIds,
                 selectedPollAnswers = state.selectedPollAnswers,
                 videoId = selectedVideoId,
@@ -70,7 +71,7 @@ fun AssetCarousel(
                 },
                 onPollOptionClick = controller::onPollOptionClick,
                 onBackClicked = controller::onBack,
-                onProductClick = controller::onProductClick
+                style = style
             )
         }
     }

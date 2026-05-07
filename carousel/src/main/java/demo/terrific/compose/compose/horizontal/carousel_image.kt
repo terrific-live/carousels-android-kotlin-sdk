@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,15 +25,21 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import demo.terrific.compose.VideoSdk
 import demo.terrific.compose.analytics.AnalyticsEvent
+import demo.terrific.compose.compose.common.DateTimeBadgeCarousel
+import demo.terrific.compose.compose.common.toFormatted
 import demo.terrific.compose.model.AssetDto
 import demo.terrific.compose.model.analytics.AuxData
+import demo.terrific.compose.style.VideoFeatureStyle
+import demo.terrific.compose.style.withSdkFont
 
 @Composable
 fun CarouselImage(
     asset: AssetDto,
+    timestampFormat: String?,
     modifier: Modifier = Modifier,
     onVideoClick: (String) -> Unit,
-    textBottomPadding: Dp = 68.dp
+    textBottomPadding: Dp = 68.dp,
+    style: VideoFeatureStyle
 ) {
     Box(
         modifier = modifier
@@ -53,6 +60,19 @@ fun CarouselImage(
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
         )
+
+        val formatted = remember(asset.timestamp) {
+            timestampFormat?.let { asset.timestamp?.toFormatted(it) }
+        }
+
+        if (formatted?.isNotEmpty() == true) {
+            DateTimeBadgeCarousel(
+                text = formatted,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(16.dp)
+            )
+        }
 
         Box(
             modifier = Modifier
@@ -82,11 +102,11 @@ fun CarouselImage(
                 Text(
                     text = it,
                     color = Color.White,
-                    fontSize = 20.sp,
                     fontWeight = FontWeight.SemiBold,
                     lineHeight = 24.sp,
                     maxLines = 3,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    style = style.subtitleTextStyle.withSdkFont(style.fontFamily)
                 )
             }
 

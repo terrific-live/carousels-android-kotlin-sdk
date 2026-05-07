@@ -11,12 +11,13 @@ data class AssetsResponse(
 
 @Serializable
 data class CarouselConfigDto (
-    val carouselAutoPlay: String? = null,
-    val carouselAutoPlayInterval: String? = null,
+    val carouselAutoPlay: Boolean? = null,
+    val carouselAutoPlayInterval: Int? = 0,
     val name: String? = null,
     val showName: String? = null,
     val showTimestamps: String? = null,
     val timestampFormat: String? = null
+
 )
 
 @Serializable

@@ -3,6 +3,7 @@ package demo.terrific.compose.compose.vertical
 import android.content.Intent
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,22 +14,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.filled.ThumbUpOffAlt
-import androidx.compose.material.icons.outlined.BarChart
 import androidx.compose.material.icons.outlined.Share
-import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,10 +40,12 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import demo.terrific.compose.compose.common.VideoProgressBar
 import demo.terrific.compose.model.AssetDto
 import demo.terrific.compose.model.PollOptionDto
+import demo.terrific.compose.style.VideoFeatureStyle
+import demo.terrific.compose.style.withSdkFont
 import kotlinx.coroutines.delay
 
 
@@ -62,6 +57,7 @@ fun PollScreen(
     onBackClicked: () -> Unit,
     isLiked: Boolean,
     onLikeClick: (String) -> Unit,
+    style: VideoFeatureStyle
 ) {
     val hasVoted = selectedOptionText != null
     var progress by remember { mutableFloatStateOf(0f) }
@@ -105,9 +101,9 @@ fun PollScreen(
                 Text(
                     text = it,
                     color = Color.White,
-                    fontSize = 24.sp,
                     fontStyle = FontStyle.Italic,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    style = style.titleTextStyle.withSdkFont(style.fontFamily)
                 )
             }
 
@@ -121,142 +117,49 @@ fun PollScreen(
                         PollResultOption(
                             option = option,
                             options = asset.pollData.options,
-                            isSelected = option.text == selectedOptionText
+                            isSelected = option.text == selectedOptionText,
+                            onClick = { onOptionClick(option.text) },
+                            style = style
                         )
                     } else {
                         PollOptionButton(
                             text = option.text,
-                            onClick = { onOptionClick(option.text) }
+                            onClick = { onOptionClick(option.text) },
+                            style = style
                         )
                     }
                 }
             }
         }
 
-        LinearProgressIndicator(
-            progress = { progress },
-            color = Color.Blue,
+//        LinearProgressIndicator(
+//            progress = { progress },
+//            color = Color.Blue,
+//            modifier = Modifier
+//                .align(Alignment.BottomCenter)
+//                .fillMaxWidth()
+//                .padding(horizontal = 16.dp, vertical = 32.dp)
+//                .height(4.dp),
+//        )
+
+
+        VideoProgressBar(
+            progress = progress,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 32.dp)
-                .height(4.dp),
+                .padding(start = 24.dp, top = 0.dp, end = 24.dp, bottom = 32.dp),
+            height = 8.dp,
+            trackColor = Color.White.copy(alpha = 0.28f),
+            progressColor = Color(0xFF36C3FF)
         )
 
         PollOverlay(
             asset = asset,
             isLiked = isLiked,
             onLikeClick = onLikeClick,
-            onBackClicked = onBackClicked
-        )
-    }
-}
-
-@Composable
-private fun PollActionsColumn(
-    liked: Boolean,
-    onLikeClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(22.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        IconButton(onClick = onLikeClick) {
-            Icon(
-                imageVector = if (liked) Icons.Default.Favorite else Icons.Outlined.ThumbUp,
-                contentDescription = "Like",
-                tint = Color.White
-            )
-        }
-
-        IconButton(onClick = { }) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Outlined.Send,
-                contentDescription = "Share",
-                tint = Color.White
-            )
-        }
-    }
-}
-
-@Composable
-private fun PollBottomBranding(
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth(0.86f)
-                .height(10.dp)
-                .clip(RoundedCornerShape(999.dp))
-                .background(Color.White.copy(alpha = 0.28f))
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth(0.78f)
-                    .fillMaxHeight()
-                    .clip(RoundedCornerShape(999.dp))
-                    .background(Color(0xFF1FB2FF))
-            )
-        }
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "POWERED BY ",
-                color = Color.White.copy(alpha = 0.9f),
-                fontSize = 12.sp
-            )
-            Text(
-                text = "terrific",
-                color = Color.White,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
-    }
-}
-
-@Composable
-private fun PollQuestionSection(
-    question: String
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Surface(
-            shape = CircleShape,
-            color = Color(0xFFECECEC),
-            shadowElevation = 4.dp
-        ) {
-            Box(
-                modifier = Modifier.size(64.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.BarChart,
-                    contentDescription = null,
-                    tint = Color.Gray
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Text(
-            text = question,
-            color = Color.White,
-            fontSize = 24.sp,
-//            fontStyle = FontStyle.FONT_WEIGHT_SEMI_BOLD,
-            textAlign = TextAlign.Center
+            onBackClicked = onBackClicked,
+            style = style
         )
     }
 }
@@ -264,7 +167,8 @@ private fun PollQuestionSection(
 @Composable
 private fun PollOptionButton(
     text: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    style: VideoFeatureStyle
 ) {
     Surface(
         onClick = onClick,
@@ -283,7 +187,7 @@ private fun PollOptionButton(
             Text(
                 text = text,
                 color = Color(0xFF1C1C1C),
-                fontSize = 18.sp
+                style = style.subtitleTextStyle.withSdkFont(style.fontFamily)
             )
         }
     }
@@ -294,7 +198,9 @@ private fun PollResultOption(
     option: PollOptionDto,
     options: List<PollOptionDto>,
     isSelected: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+    style: VideoFeatureStyle
 ) {
     val totalVotes = options.sumOf { it.numberOfVotes }.coerceAtLeast(1)
     val targetProgress = (option.numberOfVotes.toFloat() / totalVotes).coerceIn(0f, 1f)
@@ -311,6 +217,7 @@ private fun PollResultOption(
             .height(82.dp)
             .clip(RoundedCornerShape(18.dp))
             .background(Color(0xFFEDEDED))
+            .clickable { onClick() }
     ) {
 
         Box(
@@ -343,15 +250,15 @@ private fun PollResultOption(
                 text = option.text,
                 modifier = Modifier.weight(1f),
                 color = Color(0xFF1F1F1F),
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
+                style = style.subtitleTextStyle.withSdkFont(style.fontFamily)
             )
 
             Text(
                 text = "$percent%",
                 color = Color(0xFF1F1F1F),
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                style = style.subtitleTextStyle.withSdkFont(style.fontFamily)
             )
         }
     }
@@ -362,13 +269,14 @@ fun PollOverlay(
     asset: AssetDto,
     isLiked: Boolean,
     onLikeClick: (String) -> Unit,
-    onBackClicked: () -> Unit
+    onBackClicked: () -> Unit,
+    style: VideoFeatureStyle
 ) {
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(vertical = 64.dp, horizontal = 32.dp)
+            .padding(start = 32.dp, end = 32.dp, top = 32.dp, bottom = 48.dp)
             .zIndex(1f)
     ) {
 
@@ -381,21 +289,21 @@ fun PollOverlay(
         }
 
 
-        val formatted = remember(asset.timestamp) {
-            asset.timestamp?.toFormatted()
-        }
+//        val formatted = remember(asset.timestamp) {
+//            asset.timestamp?.toFormatted()
+//        }
 
         // DATE
 
-        if (formatted?.isNotEmpty() == true) {
-            Text(
-                text = formatted,
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .background(Color.White.copy(alpha = 0.8f))
-                    .padding(6.dp)
-            )
-        }
+//        if (formatted?.isNotEmpty() == true) {
+//            Text(
+//                text = formatted,
+//                modifier = Modifier
+//                    .align(Alignment.TopStart)
+//                    .background(Color.White.copy(alpha = 0.8f))
+//                    .padding(6.dp)
+//            )
+//        }
 
         // RIGHT ACTIONS
         Column(
@@ -436,7 +344,7 @@ fun PollOverlay(
 
             Text(
                 text = asset.title ?: "",
-                style = MaterialTheme.typography.titleMedium,
+                style = style.titleTextStyle.withSdkFont(style.fontFamily),
                 color = Color.White
             )
 
@@ -444,7 +352,7 @@ fun PollOverlay(
 
             Text(
                 text = asset.description ?: "",
-                style = MaterialTheme.typography.bodyMedium,
+                style = style.subtitleTextStyle.withSdkFont(style.fontFamily),
                 color = Color.White
             )
         }

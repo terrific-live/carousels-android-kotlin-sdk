@@ -41,21 +41,24 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import demo.terrific.compose.VideoSdk
 import demo.terrific.compose.analytics.AnalyticsEvent
-import demo.terrific.compose.compose.TimelineProductCard
+import demo.terrific.compose.compose.common.DateTimeBadgeCarousel
+import demo.terrific.compose.compose.common.toFormatted
 import demo.terrific.compose.model.AssetDto
 import demo.terrific.compose.model.AssetType
 import demo.terrific.compose.model.CarouselConfigDto
 import demo.terrific.compose.model.analytics.AuxData
 import demo.terrific.compose.style.VideoFeatureStyle
+import demo.terrific.compose.style.withSdkFont
+import kotlinx.coroutines.delay
 
 @SuppressLint("FrequentlyChangingValue")
 @Composable
 fun VideoCarousel(
     assets: List<AssetDto>,
+    timestampFormat: String?,
     config: CarouselConfigDto?,
     style: VideoFeatureStyle,
-    onVideoClick: (String) -> Unit,
-    onProductClick: (String) -> Unit
+    onVideoClick: (String) -> Unit
 ) {
     val context = LocalContext.current
     val pagerState = rememberPagerState(pageCount = { assets.size })
@@ -82,6 +85,24 @@ fun VideoCarousel(
     DisposableEffect(players) {
         onDispose {
             players.forEach { it.release() }
+        }
+    }
+
+    LaunchedEffect(assets.size) {
+        if (assets.size <= 1) return@LaunchedEffect
+
+        while (true) {
+            delay(2000)
+
+            if (!pagerState.isScrollInProgress) {
+                val nextPage = if (pagerState.currentPage == assets.lastIndex) {
+                    0
+                } else {
+                    pagerState.currentPage + 1
+                }
+
+                pagerState.animateScrollToPage(nextPage)
+            }
         }
     }
 
@@ -121,10 +142,7 @@ fun VideoCarousel(
         verticalAlignment = Alignment.CenterVertically
     ) { page ->
         val asset = assets[page]
-        val firstProduct = asset.products?.firstOrNull()
-
-        val productHeight = style.pageHeight * style.productHeightFraction
-        val hasProduct = firstProduct != null
+        val hasProducts = asset.products?.isNotEmpty() == true
 
         Column(
             modifier = Modifier
@@ -144,39 +162,45 @@ fun VideoCarousel(
                     AssetType.POLL.type -> {
                         PollCarouselItem(
                             asset = asset,
+                            timestampFormat = timestampFormat,
                             assetId = asset.id,
                             onClick = onVideoClick,
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier.fillMaxSize(),
+                            style = style
                         )
                     }
 
                     AssetType.VIDEO.type -> {
                         VideoCard(
                             video = asset,
+                            timestampFormat = timestampFormat,
                             player = players[page],
                             onVideoClick = onVideoClick,
-                            textBottomPadding = if (hasProduct) 68.dp else 20.dp
+                            textBottomPadding = if (hasProducts) 68.dp else 20.dp,
+                            style = style
                         )
                     }
 
                     AssetType.IMAGE.type -> {
                         CarouselImage(
                             asset = asset,
-                            onVideoClick = onVideoClick
+                            timestampFormat = timestampFormat,
+                            onVideoClick = onVideoClick,
+                            style = style
                         )
                     }
                 }
             }
 
-            if (firstProduct != null) {
+            if (hasProducts) {
                 Spacer(modifier = Modifier.height(style.productSpacing))
 
-                TimelineProductCard(
-                    product = firstProduct,
+                TimelineProductsRowCarousel(
+                    products = asset.products,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(productHeight),
-                    onClick = onProductClick
+                    ,
+                    style = style
                 )
             }
         }
@@ -186,10 +210,12 @@ fun VideoCarousel(
 @Composable
 fun VideoCard(
     video: AssetDto,
+    timestampFormat: String?,
     modifier: Modifier = Modifier,
     player: ExoPlayer,
     onVideoClick: (String) -> Unit,
-    textBottomPadding: Dp = 68.dp
+    textBottomPadding: Dp = 68.dp,
+    style: VideoFeatureStyle
 ) {
     Box(
         modifier = modifier
@@ -228,6 +254,19 @@ fun VideoCard(
                 )
         )
 
+        val formatted = remember(video.timestamp) {
+            timestampFormat?.let { video.timestamp?.toFormatted(it) }
+        }
+
+        if (formatted?.isNotEmpty() == true) {
+            DateTimeBadgeCarousel(
+                text = formatted,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(16.dp)
+            )
+        }
+
         Column(
             modifier = Modifier
                 .align(Alignment.BottomStart)
@@ -242,11 +281,11 @@ fun VideoCard(
                 Text(
                     text = it,
                     color = Color.White,
-                    fontSize = 20.sp,
                     fontWeight = FontWeight.SemiBold,
                     lineHeight = 24.sp,
                     maxLines = 3,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    style = style.subtitleTextStyle.withSdkFont(style.fontFamily)
                 )
             }
 
