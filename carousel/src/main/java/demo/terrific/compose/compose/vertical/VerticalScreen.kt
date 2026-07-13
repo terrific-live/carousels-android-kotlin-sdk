@@ -14,15 +14,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material.icons.outlined.ThumbUp
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -31,11 +32,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -47,30 +51,41 @@ import androidx.compose.ui.zIndex
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
+import coil.compose.AsyncImage
 import demo.terrific.R
+import demo.terrific.compose.VideoSdk
+import demo.terrific.compose.analytics.AnalyticsEvent
+import demo.terrific.compose.compose.common.DateTimeBadge
+import demo.terrific.compose.compose.common.SwipeHintOverlay
+import demo.terrific.compose.compose.common.VideoProgressBar
+import demo.terrific.compose.compose.common.toFormatted
+import demo.terrific.compose.compose.horizontal.toComposeColorOrNull
 import demo.terrific.compose.model.AssetDto
 import demo.terrific.compose.model.AssetType
+import demo.terrific.compose.model.SponsorshipDto
+import demo.terrific.compose.model.analytics.AuxData
+import demo.terrific.compose.style.VideoFeatureStyle
+import demo.terrific.compose.style.withSdkFont
 import kotlinx.coroutines.delay
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.TimeZone
-import kotlin.time.ExperimentalTime
 
 @Composable
 fun VerticalScreen(
     assets: List<AssetDto>,
-    onPollOptionClick: (questionId: String, optionText: String) -> Unit,
+    timestampFormat: String?,
+    onPollOptionClick: (assetId: String, questionId: String, optionText: String) -> Unit,
     likedVideos: Set<String>,
     selectedPollAnswers: Map<String, String>,
     videoId: String,
     onLikeClick: (String) -> Unit,
     onBackClicked: () -> Unit,
-    onProductClick: (String) -> Unit
+    sponsorship: SponsorshipDto?,
+    style: VideoFeatureStyle
 ) {
     HideSystemBars()
 
@@ -83,6 +98,20 @@ fun VerticalScreen(
         pageCount = { assets.size }
     )
 
+
+    var hasShownSwipeHint by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    LaunchedEffect(pagerState) {
+        VideoSdk.analytics().trackEvent(
+            AnalyticsEvent.TimelineOpened,
+            AuxData(
+                assets = assets
+            )
+        )
+    }
+
     VerticalPager(
         state = pagerState,
         modifier = Modifier.fillMaxSize()
@@ -91,12 +120,19 @@ fun VerticalScreen(
 
         VerticalScreenPage(
             asset = asset,
+            timestampFormat = timestampFormat,
             isLiked = asset.id in likedVideos,
+            isActive = pagerState.settledPage == page,
+            showSwipeHint = !hasShownSwipeHint && page == pagerState.settledPage,
+            onSwipeHintFinished = {
+                hasShownSwipeHint = true
+            },
             selectedPollAnswer = asset.pollData?.questionId?.let(selectedPollAnswers::get),
             onLikeClick = onLikeClick,
             onPollOptionClick = onPollOptionClick,
+            sponsorship = sponsorship,
             onBackClicked = onBackClicked,
-            onProductClick = onProductClick
+            style = style
         )
     }
 }
@@ -104,13 +140,19 @@ fun VerticalScreen(
 @Composable
 private fun VerticalScreenPage(
     asset: AssetDto,
+    timestampFormat: String?,
     isLiked: Boolean,
+    isActive: Boolean,
+    showSwipeHint: Boolean,
+    onSwipeHintFinished: () -> Unit,
     selectedPollAnswer: String?,
     onLikeClick: (String) -> Unit,
-    onPollOptionClick: (questionId: String, optionText: String) -> Unit,
+    onPollOptionClick: (assetId: String, questionId: String, optionText: String) -> Unit,
     onBackClicked: () -> Unit,
-    onProductClick: (String) -> Unit,
+    sponsorship: SponsorshipDto?,
+    style: VideoFeatureStyle
 ) {
+
     when (asset.type) {
         AssetType.POLL.type -> {
             asset.pollData?.let { poll ->
@@ -120,9 +162,11 @@ private fun VerticalScreenPage(
                     onLikeClick = { onLikeClick(asset.id) },
                     onBackClicked = onBackClicked,
                     selectedOptionText = selectedPollAnswer,
+                    sponsorship = sponsorship,
                     onOptionClick = { optionText ->
-                        onPollOptionClick(poll.questionId, optionText)
-                    }
+                        onPollOptionClick(asset.id, poll.questionId, optionText)
+                    },
+                    style = style
                 )
             }
         }
@@ -130,10 +174,15 @@ private fun VerticalScreenPage(
         AssetType.VIDEO.type -> {
             FullscreenVideoPlayer(
                 video = asset,
+                timestampFormat = timestampFormat,
                 isLiked = isLiked,
+                isActive = isActive,
                 onLikeClick = { onLikeClick(asset.id) },
                 onBackClicked = onBackClicked,
-                onProductClick = onProductClick
+                style = style,
+                onSwipeHintFinished = onSwipeHintFinished,
+                sponsorship = sponsorship,
+                showSwipeHint = showSwipeHint
             )
         }
 
@@ -141,10 +190,11 @@ private fun VerticalScreenPage(
             asset.media?.mobileUrl?.let {
                 ImageAsset(
                     asset = asset,
+                    timestampFormat = timestampFormat,
                     isLiked = isLiked,
                     onLikeClick = { onLikeClick(asset.id) },
                     onBackClicked = onBackClicked,
-                    onProductClick = onProductClick
+                    style = style
                 )
             }
         }
@@ -164,10 +214,15 @@ private fun VerticalScreenPage(
 @Composable
 fun FullscreenVideoPlayer(
     video: AssetDto,
+    timestampFormat: String?,
     isLiked: Boolean,
+    isActive: Boolean,
+    onSwipeHintFinished: () -> Unit,
     onLikeClick: (String) -> Unit,
     onBackClicked: () -> Unit,
-    onProductClick: (String) -> Unit
+    style: VideoFeatureStyle,
+    sponsorship: SponsorshipDto?,
+    showSwipeHint: Boolean
 ) {
     val context = LocalContext.current
     val products = video.products.orEmpty()
@@ -183,12 +238,50 @@ fun FullscreenVideoPlayer(
         }
     }
 
+    var isLoading by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    DisposableEffect(player) {
+        val listener = object : Player.Listener {
+
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                isLoading = playbackState == Player.STATE_BUFFERING
+                if (playbackState == Player.STATE_READY) {
+                    isLoading = false
+                    errorMessage = null
+                }
+            }
+
+            override fun onPlayerError(error: PlaybackException) {
+                isLoading = false
+                errorMessage = error.message ?: "Video loading error"
+            }
+        }
+
+        player.addListener(listener)
+
+        onDispose {
+            player.removeListener(listener)
+            player.release()
+        }
+    }
+
+    LaunchedEffect(isActive, player) {
+        if (isActive) {
+            player.playWhenReady = true
+            player.play()
+        } else {
+            player.playWhenReady = false
+            player.pause()
+        }
+    }
+
     DisposableEffect(player) {
         onDispose { player.release() }
     }
 
-    LaunchedEffect(player) {
-        while (true) {
+    LaunchedEffect(player, isActive) {
+        while (isActive) {
             val duration = player.duration
             val position = player.currentPosition
 
@@ -200,6 +293,8 @@ fun FullscreenVideoPlayer(
 
             delay(200)
         }
+
+        progress = 0f
     }
 
 
@@ -212,6 +307,31 @@ fun FullscreenVideoPlayer(
 //                    .aspectRatio(9f / 16f)
             ) {
 
+                if (isLoading || errorMessage != null) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.25f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            strokeWidth = 3.dp
+                        )
+                    }
+                }
+
+                video.background?.let {
+                    AsyncImage(
+                        model = it.imageUrl,
+                        contentDescription = "background",
+                        modifier = Modifier
+                            .fillMaxSize(),
+//                            .clip(RoundedCornerShape(16.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                }
+
                 AndroidView(
                     factory = {
                         PlayerView(it).apply {
@@ -220,25 +340,46 @@ fun FullscreenVideoPlayer(
                             resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
                         }
                     },
-                    modifier = Modifier.fillMaxSize()
+                    modifier = if (video.background != null) {
+                        Modifier
+                            .fillMaxSize()
+                            .padding(16.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                    } else {
+                        Modifier
+                            .fillMaxSize()
+                    }
                 )
 
                 VideoOverlay(
                     video = video,
+                    timestampFormat = timestampFormat,
                     isLiked = isLiked,
                     onLikeClick = onLikeClick,
                     onBackClicked = onBackClicked,
-                    player = player
+                    player = player,
+                    sponsorship = sponsorship,
+                    style = style
                 )
 
-                LinearProgressIndicator(
-                    progress = { progress },
+                VideoProgressBar(
+                    progress = progress,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
-                        .padding(4.dp)
-                        .height(6.dp),
+                        .padding(start = 24.dp, top = 0.dp, end = 24.dp, bottom = 32.dp),
+                    height = 8.dp,
+                    trackColor = Color.White.copy(alpha = 0.28f),
+                    progressColor = Color.White
                 )
+
+                if (showSwipeHint) {
+                    SwipeHintOverlay(
+                        modifier = Modifier.align(Alignment.Center),
+                        onFinished = onSwipeHintFinished
+                    )
+
+                }
             }
 
             if (hasProducts) {
@@ -257,7 +398,7 @@ fun FullscreenVideoPlayer(
                 ) {
                     TimelineProductsRow(
                         products = products,
-                        onProductClick = onProductClick
+                        style = style
                     )
                 }
             }
@@ -268,16 +409,19 @@ fun FullscreenVideoPlayer(
 @Composable
 fun VideoOverlay(
     video: AssetDto,
+    timestampFormat: String?,
     isLiked: Boolean,
     onLikeClick: (String) -> Unit,
     onBackClicked: () -> Unit,
-    player: ExoPlayer
+    player: ExoPlayer,
+    sponsorship: SponsorshipDto?,
+    style: VideoFeatureStyle
 ) {
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(vertical = 32.dp, horizontal = 32.dp)
+            .padding(start = 32.dp, end = 32.dp, top = 32.dp, bottom = 48.dp)
             .zIndex(1f)
     ) {
 
@@ -289,26 +433,28 @@ fun VideoOverlay(
             Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
         }
 
-
         val formatted = remember(video.timestamp) {
-            video.timestamp?.toFormatted()
+            timestampFormat?.let { video.timestamp?.toFormatted(it) }
         }
 
-        // DATE
-
         if (formatted?.isNotEmpty() == true) {
-            Text(
-                text = formatted,
+            DateTimeBadge(formatted)
+        }
+
+        sponsorship?.badge?.let {
+            SponsorshipBadge(
+                title = it.title,
+                logoUrl = it.logoUrl,
+                backgroundColor = sponsorship.badge.backgroundColor?.toComposeColorOrNull()
+                    ?: Color(0xFFF96544),
                 modifier = Modifier
                     .align(Alignment.TopStart)
-                    .background(Color.White.copy(alpha = 0.8f))
-                    .padding(6.dp)
+                    .padding(12.dp)
             )
         }
 
         var isMuted by remember { mutableStateOf(false) }
 
-        // RIGHT ACTIONS
         Column(
             modifier = Modifier
                 .align(Alignment.BottomEnd),
@@ -375,11 +521,11 @@ fun VideoOverlay(
                 Text(
                     text = it,
                     color = Color.White,
-                    fontSize = 20.sp,
                     fontWeight = FontWeight.SemiBold,
                     lineHeight = 24.sp,
                     maxLines = 3,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    style = style.titleTextStyle.withSdkFont(style.fontFamily)
                 )
             }
 
@@ -389,11 +535,11 @@ fun VideoOverlay(
                 Text(
                     text = it,
                     color = Color.White,
-                    fontSize = 16.sp,
                     fontWeight = FontWeight.Medium,
                     lineHeight = 24.sp,
                     maxLines = 3,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    style = style.subtitleTextStyle.withSdkFont(style.fontFamily)
                 )
             }
         }
@@ -418,29 +564,5 @@ fun HideSystemBars() {
         onDispose {
             controller.show(WindowInsetsCompat.Type.statusBars())
         }
-    }
-}
-
-@OptIn(ExperimentalTime::class)
-fun String.toFormatted(): String {
-    return try {
-        val inputFormat = SimpleDateFormat(
-            "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
-            Locale.getDefault()
-        ).apply {
-            timeZone = TimeZone.getTimeZone("UTC")
-        }
-
-        val outputFormat = SimpleDateFormat(
-            "dd/MM/yyyy - HH'h'mm",
-            Locale.getDefault()
-        ).apply {
-            timeZone = TimeZone.getDefault()
-        }
-
-        val date = inputFormat.parse(this) ?: return this
-        outputFormat.format(date)
-    } catch (_: Exception) {
-        this
     }
 }

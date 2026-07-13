@@ -5,6 +5,7 @@ import demo.terrific.compose.analytics.AnalyticsEvent
 import demo.terrific.compose.compose.common.VideoScreen
 import demo.terrific.compose.model.AssetDto
 import demo.terrific.compose.model.CarouselConfigDto
+import demo.terrific.compose.model.PollOptionDto
 import demo.terrific.compose.model.analytics.AuxData
 import demo.terrific.compose.repository.VideoRepository
 import demo.terrific.compose.storage.likes.LikesStorage
@@ -26,11 +27,17 @@ internal class VideoFeatureController(
 
     private var carouselId: String = ""
 
+    private var lastStoreId: String? = null
+    private var lastCarouselId: String? = null
+
     fun load(
         storeId: String,
         carouselId: String
     ) {
         this.carouselId = carouselId
+        lastStoreId = storeId
+        lastCarouselId = carouselId
+
         scope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
 
@@ -89,7 +96,9 @@ internal class VideoFeatureController(
                         isLoading = false,
                         assets = restoredAssets,
                         likedVideoIds = likedVideos,
-                        selectedPollAnswers = restoredPollAnswers
+                        selectedPollAnswers = restoredPollAnswers,
+                        timestampFormat = resp.carouselConfig.timestampFormat,
+                        configDto = resp.carouselConfig
                     )
                 }
 
@@ -108,6 +117,13 @@ internal class VideoFeatureController(
                 }
             }
         }
+    }
+
+    fun retry() {
+        val storeId = lastStoreId ?: return
+        val carouselId = lastCarouselId ?: return
+
+        load(storeId, carouselId)
     }
 
 
@@ -168,9 +184,57 @@ internal class VideoFeatureController(
             )
         }
     }
+    fun onPollOptionClick(
+        assetId: String,
+        questionId: String,
+        selectedOptionText: String
+    ) {
+        _state.update { currentState ->
 
-    fun onProductClick(product: String) {
+            val previousAnswer = currentState.selectedPollAnswers[questionId]
 
+            if (previousAnswer == selectedOptionText) return@update currentState
+
+            var updatedOptionsForSave: List<PollOptionDto> = emptyList()
+
+            val updatedAssets = currentState.assets.map { asset ->
+                if (asset.id != assetId) return@map asset
+
+                val poll = asset.pollData ?: return@map asset
+
+                val updatedOptions = poll.options.map { option ->
+                    when (option.text) {
+                        previousAnswer -> option.copy(
+                            numberOfVotes = (option.numberOfVotes - 1).coerceAtLeast(0)
+                        )
+
+                        selectedOptionText -> option.copy(
+                            numberOfVotes = option.numberOfVotes + 1
+                        )
+
+                        else -> option
+                    }
+                }
+
+                updatedOptionsForSave = updatedOptions
+
+                asset.copy(
+                    pollData = poll.copy(options = updatedOptions)
+                )
+            }
+
+            val updatedSelectedAnswers =
+                currentState.selectedPollAnswers.toMutableMap().apply {
+                    this[questionId] = selectedOptionText
+                }
+
+            pollStorage.savePollState(questionId, selectedOptionText, updatedOptionsForSave)
+
+            currentState.copy(
+                assets = updatedAssets,
+                selectedPollAnswers = updatedSelectedAnswers
+            )
+        }
     }
 }
 
@@ -182,6 +246,7 @@ internal data class VideoFeatureState(
     val selectedId: String = "",
     val screen: VideoScreen = VideoScreen.Carousel,
     val error: String? = null,
-    val selectedPollAnswers: Map<String, String> = emptyMap()
+    val selectedPollAnswers: Map<String, String> = emptyMap(),
+    val timestampFormat: String? = ""
 )
 

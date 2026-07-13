@@ -12,7 +12,7 @@ interface VideoApi {
         @Path("carouselId") carouselId: String
     ): AssetsResponse
 
-    @GET("api/v1/stores/{storeId}/display/{displayId}")
+    @GET("api/v1/stores/{storeId}/carousel/{displayId}")
     suspend fun getVerticalAssets(
         @Path("storeId") storeId: String,
         @Path("displayId") displayId: String
