@@ -79,6 +79,13 @@ fun VideoCarousel(
     LaunchedEffect(pagerState.currentPage, players) {
         players.forEachIndexed { index, player ->
             player.playWhenReady = index == pagerState.currentPage
+            VideoSdk.analytics().trackTimelineAssetViewStarted(
+                assetType = "video",
+                position = 0,
+                fixedPosition = 0,
+                emptyList(),
+                emptyList()
+            )
         }
     }
 
@@ -101,7 +108,7 @@ fun VideoCarousel(
                     pagerState.currentPage + 1
                 }
 
-                pagerState.animateScrollToPage(nextPage)
+//                pagerState.animateScrollToPage(nextPage)
             }
         }
     }

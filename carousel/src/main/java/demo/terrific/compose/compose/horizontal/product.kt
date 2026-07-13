@@ -23,7 +23,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,7 +37,6 @@ import coil.compose.AsyncImage
 import demo.terrific.compose.model.ProductDto
 import demo.terrific.compose.style.VideoFeatureStyle
 import demo.terrific.compose.style.withSdkFont
-import kotlinx.coroutines.delay
 
 
 @Composable
@@ -58,30 +56,30 @@ fun TimelineProductsRowCarousel(
         if (products.size == 1) products else products + products.first()
     }
 
-    LaunchedEffect(products) {
-        if (products.size <= 1) return@LaunchedEffect
-
-        var currentIndex = 0
-
-        while (true) {
-            delay(1000)
-
-            if (!listState.isScrollInProgress) {
-                val nextIndex = currentIndex + 1
-
-                if (nextIndex < loopedProducts.lastIndex) {
-                    currentIndex = nextIndex
-                    listState.animateScrollToItem(currentIndex)
-                } else {
-                    currentIndex = nextIndex
-                    listState.animateScrollToItem(currentIndex)
-
-                    listState.scrollToItem(0)
-                    currentIndex = 0
-                }
-            }
-        }
-    }
+//    LaunchedEffect(products) {
+//        if (products.size <= 1) return@LaunchedEffect
+//
+//        var currentIndex = 0
+//
+//        while (true) {
+//            delay(1000)
+//
+//            if (!listState.isScrollInProgress) {
+//                val nextIndex = currentIndex + 1
+//
+//                if (nextIndex < loopedProducts.lastIndex) {
+//                    currentIndex = nextIndex
+//                    listState.animateScrollToItem(currentIndex)
+//                } else {
+//                    currentIndex = nextIndex
+//                    listState.animateScrollToItem(currentIndex)
+//
+//                    listState.scrollToItem(0)
+//                    currentIndex = 0
+//                }
+//            }
+//        }
+//    }
 
     LazyRow(
         state = listState,

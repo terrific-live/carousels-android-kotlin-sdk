@@ -42,8 +42,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import demo.terrific.compose.compose.common.VideoProgressBar
+import demo.terrific.compose.compose.horizontal.toComposeColorOrNull
 import demo.terrific.compose.model.AssetDto
 import demo.terrific.compose.model.PollOptionDto
+import demo.terrific.compose.model.SponsorshipDto
 import demo.terrific.compose.style.VideoFeatureStyle
 import demo.terrific.compose.style.withSdkFont
 import kotlinx.coroutines.delay
@@ -56,6 +58,7 @@ fun PollScreen(
     onOptionClick: (String) -> Unit,
     onBackClicked: () -> Unit,
     isLiked: Boolean,
+    sponsorship: SponsorshipDto?,
     onLikeClick: (String) -> Unit,
     style: VideoFeatureStyle
 ) {
@@ -77,17 +80,28 @@ fun PollScreen(
     }
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    listOf(
-                        Color(0xFF8E123C),
-                        Color(0xFF4E2D72)
-                    )
+        modifier = Modifier.background(
+            Brush.verticalGradient(
+                listOf(
+                    asset.background?.color?.primary?.toComposeColorOrNull() ?: Color(0xFFA61E2C),
+                    asset.background?.color?.secondary?.toComposeColorOrNull() ?: Color(0xFF233B7B)
                 )
             )
+        )
     ) {
+
+        sponsorship?.badge?.let {
+            SponsorshipBadge(
+                title = it.title,
+                logoUrl = it.logoUrl,
+                backgroundColor = sponsorship.badge.backgroundColor?.toComposeColorOrNull()
+                    ?: Color(0xFFF96544),
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 8.dp)
+                    .zIndex(10f)
+            )
+        }
 
         Column(
             modifier = Modifier

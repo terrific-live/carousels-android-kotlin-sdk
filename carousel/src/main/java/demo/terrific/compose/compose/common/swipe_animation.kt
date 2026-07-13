@@ -138,7 +138,7 @@ private fun SwipeArrow(
 ) {
     Icon(
         imageVector = Icons.Default.KeyboardArrowUp,
-        contentDescription = null,
+        contentDescription = "Arrow up",
         tint = Color.White,
         modifier = Modifier
             .offset(y = offsetY)

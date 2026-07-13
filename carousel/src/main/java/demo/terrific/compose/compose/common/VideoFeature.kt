@@ -39,9 +39,11 @@ fun AssetCarousel(
         }
 
         state.error != null -> {
-//            Box(modifier = modifier.fillMaxSize()) {
-//                Text(text = state.error ?: "Unknown error")
-//            }
+            VideoErrorScreen(
+                modifier = modifier.fillMaxSize(),
+                onRetryClick = controller::retry,
+                onCloseClick = controller::onBack
+            )
         }
 
         state.screen is VideoScreen.Carousel -> {
@@ -71,6 +73,7 @@ fun AssetCarousel(
                 },
                 onPollOptionClick = controller::onPollOptionClick,
                 onBackClicked = controller::onBack,
+                sponsorship = state.configDto?.sponsorship,
                 style = style
             )
         }
@@ -91,7 +94,13 @@ internal fun rememberVideoFeatureController(storeId: String): VideoFeatureContro
     val likesStorage = remember { VideoSdk.likesStorage() }
     val pollStorage = remember { VideoSdk.pollStorage() }
 
-    return remember(repository, likesStorage, pollStorage,scope) {
+    return remember(
+        storeId,
+        repository,
+        likesStorage,
+        pollStorage,
+        scope
+    ) {
         VideoFeatureController(
             repository = repository,
             likesStorage = likesStorage,

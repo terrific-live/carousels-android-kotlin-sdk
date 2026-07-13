@@ -27,11 +27,17 @@ internal class VideoFeatureController(
 
     private var carouselId: String = ""
 
+    private var lastStoreId: String? = null
+    private var lastCarouselId: String? = null
+
     fun load(
         storeId: String,
         carouselId: String
     ) {
         this.carouselId = carouselId
+        lastStoreId = storeId
+        lastCarouselId = carouselId
+
         scope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
 
@@ -91,7 +97,8 @@ internal class VideoFeatureController(
                         assets = restoredAssets,
                         likedVideoIds = likedVideos,
                         selectedPollAnswers = restoredPollAnswers,
-                        timestampFormat = resp.carouselConfig.timestampFormat
+                        timestampFormat = resp.carouselConfig.timestampFormat,
+                        configDto = resp.carouselConfig
                     )
                 }
 
@@ -110,6 +117,13 @@ internal class VideoFeatureController(
                 }
             }
         }
+    }
+
+    fun retry() {
+        val storeId = lastStoreId ?: return
+        val carouselId = lastCarouselId ?: return
+
+        load(storeId, carouselId)
     }
 
 

@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material.icons.outlined.ThumbUp
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -50,6 +51,7 @@ import androidx.compose.ui.zIndex
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
@@ -57,12 +59,17 @@ import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import coil.compose.AsyncImage
 import demo.terrific.R
+import demo.terrific.compose.VideoSdk
+import demo.terrific.compose.analytics.AnalyticsEvent
 import demo.terrific.compose.compose.common.DateTimeBadge
 import demo.terrific.compose.compose.common.SwipeHintOverlay
 import demo.terrific.compose.compose.common.VideoProgressBar
 import demo.terrific.compose.compose.common.toFormatted
+import demo.terrific.compose.compose.horizontal.toComposeColorOrNull
 import demo.terrific.compose.model.AssetDto
 import demo.terrific.compose.model.AssetType
+import demo.terrific.compose.model.SponsorshipDto
+import demo.terrific.compose.model.analytics.AuxData
 import demo.terrific.compose.style.VideoFeatureStyle
 import demo.terrific.compose.style.withSdkFont
 import kotlinx.coroutines.delay
@@ -77,6 +84,7 @@ fun VerticalScreen(
     videoId: String,
     onLikeClick: (String) -> Unit,
     onBackClicked: () -> Unit,
+    sponsorship: SponsorshipDto?,
     style: VideoFeatureStyle
 ) {
     HideSystemBars()
@@ -93,6 +101,15 @@ fun VerticalScreen(
 
     var hasShownSwipeHint by rememberSaveable {
         mutableStateOf(false)
+    }
+
+    LaunchedEffect(pagerState) {
+        VideoSdk.analytics().trackEvent(
+            AnalyticsEvent.TimelineOpened,
+            AuxData(
+                assets = assets
+            )
+        )
     }
 
     VerticalPager(
@@ -113,6 +130,7 @@ fun VerticalScreen(
             selectedPollAnswer = asset.pollData?.questionId?.let(selectedPollAnswers::get),
             onLikeClick = onLikeClick,
             onPollOptionClick = onPollOptionClick,
+            sponsorship = sponsorship,
             onBackClicked = onBackClicked,
             style = style
         )
@@ -131,6 +149,7 @@ private fun VerticalScreenPage(
     onLikeClick: (String) -> Unit,
     onPollOptionClick: (assetId: String, questionId: String, optionText: String) -> Unit,
     onBackClicked: () -> Unit,
+    sponsorship: SponsorshipDto?,
     style: VideoFeatureStyle
 ) {
 
@@ -143,6 +162,7 @@ private fun VerticalScreenPage(
                     onLikeClick = { onLikeClick(asset.id) },
                     onBackClicked = onBackClicked,
                     selectedOptionText = selectedPollAnswer,
+                    sponsorship = sponsorship,
                     onOptionClick = { optionText ->
                         onPollOptionClick(asset.id, poll.questionId, optionText)
                     },
@@ -161,6 +181,7 @@ private fun VerticalScreenPage(
                 onBackClicked = onBackClicked,
                 style = style,
                 onSwipeHintFinished = onSwipeHintFinished,
+                sponsorship = sponsorship,
                 showSwipeHint = showSwipeHint
             )
         }
@@ -200,6 +221,7 @@ fun FullscreenVideoPlayer(
     onLikeClick: (String) -> Unit,
     onBackClicked: () -> Unit,
     style: VideoFeatureStyle,
+    sponsorship: SponsorshipDto?,
     showSwipeHint: Boolean
 ) {
     val context = LocalContext.current
@@ -213,6 +235,34 @@ fun FullscreenVideoPlayer(
             prepare()
             playWhenReady = true
             repeatMode = Player.REPEAT_MODE_ONE
+        }
+    }
+
+    var isLoading by remember { mutableStateOf(true) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    DisposableEffect(player) {
+        val listener = object : Player.Listener {
+
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                isLoading = playbackState == Player.STATE_BUFFERING
+                if (playbackState == Player.STATE_READY) {
+                    isLoading = false
+                    errorMessage = null
+                }
+            }
+
+            override fun onPlayerError(error: PlaybackException) {
+                isLoading = false
+                errorMessage = error.message ?: "Video loading error"
+            }
+        }
+
+        player.addListener(listener)
+
+        onDispose {
+            player.removeListener(listener)
+            player.release()
         }
     }
 
@@ -257,6 +307,20 @@ fun FullscreenVideoPlayer(
 //                    .aspectRatio(9f / 16f)
             ) {
 
+                if (isLoading || errorMessage != null) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.25f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            strokeWidth = 3.dp
+                        )
+                    }
+                }
+
                 video.background?.let {
                     AsyncImage(
                         model = it.imageUrl,
@@ -294,6 +358,7 @@ fun FullscreenVideoPlayer(
                     onLikeClick = onLikeClick,
                     onBackClicked = onBackClicked,
                     player = player,
+                    sponsorship = sponsorship,
                     style = style
                 )
 
@@ -349,6 +414,7 @@ fun VideoOverlay(
     onLikeClick: (String) -> Unit,
     onBackClicked: () -> Unit,
     player: ExoPlayer,
+    sponsorship: SponsorshipDto?,
     style: VideoFeatureStyle
 ) {
 
@@ -373,6 +439,18 @@ fun VideoOverlay(
 
         if (formatted?.isNotEmpty() == true) {
             DateTimeBadge(formatted)
+        }
+
+        sponsorship?.badge?.let {
+            SponsorshipBadge(
+                title = it.title,
+                logoUrl = it.logoUrl,
+                backgroundColor = sponsorship.badge.backgroundColor?.toComposeColorOrNull()
+                    ?: Color(0xFFF96544),
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(12.dp)
+            )
         }
 
         var isMuted by remember { mutableStateOf(false) }

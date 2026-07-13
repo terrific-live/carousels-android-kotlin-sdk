@@ -1,6 +1,5 @@
 package demo.terrific.compose.model
 
-import com.google.gson.JsonElement
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -16,8 +15,41 @@ data class CarouselConfigDto (
     val name: String? = null,
     val showName: String? = null,
     val showTimestamps: String? = null,
-    val timestampFormat: String? = null
+    val timestampFormat: String? = null,
+    val sponsorship: SponsorshipDto? = null
 
+)
+
+@Serializable
+data class SponsorshipDto(
+    val adPlacementType: String? = null,
+    val backgroundColor: String? = null,
+    val badge: SponsorshipBadgeDto? = null,
+    val banner: SponsorshipBannerDto? = null,
+    val clickRedirect: String? = null,
+    val enabled: Boolean = false,
+    val poll: SponsorshipPollDto? = null,
+    val sideLogoUrl: String? = null,
+    val sponsorLabel: String? = null,
+    val topLogoUrl: String? = null,
+    val verticalClickRedirect: String? = null,
+    val verticalEnabled: Boolean = false
+)
+
+@Serializable
+data class SponsorshipBadgeDto(
+    val backgroundColor: String? = null,
+    val clickRedirect: String? = null,
+    val logoUrl: String? = null,
+    val position: String? = null,
+    val title: String? = null
+)
+
+@Serializable
+data class SponsorshipPollDto(
+    val adPosition: String? = null,
+    val clickRedirect: String? = null,
+    val logoUrl: String? = null
 )
 
 @Serializable
@@ -34,10 +66,22 @@ data class AssetDto(
     val products: List<ProductDto>? = null
 )
 @Serializable
+data class SponsorshipBannerDto(
+    val imageUrl: String? = null,
+    val clickRedirect: String? = null,
+    val backgroundColor: String? = null
+)
+@Serializable
 data class BackgroundDto(
-    val color: JsonElement? = null,
+    val color: ColorDto? = null,
     val imageUrl: String? = null,
     val type: String? = null
+)
+
+@Serializable
+data class ColorDto(
+    val primary: String? = null,
+    val secondary: String? = null
 )
 
 @Serializable
