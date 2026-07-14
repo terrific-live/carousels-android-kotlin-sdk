@@ -1,44 +1,26 @@
 package demo.terrific.compose.repository.analytics
 
-import demo.terrific.compose.analytics.AnalyticsDebugStore
-import demo.terrific.compose.model.analytics.UserEventRequest
+import demo.terrific.compose.analytics.AnalyticsEventRequest
 import demo.terrific.compose.network.TerrificAnalyticsApi
 
-internal class TerrificAnalyticsRepository(
-    private val api: TerrificAnalyticsApi
+class TerrificAnalyticsRepository(
+    private val api: TerrificAnalyticsApi,
+    private val storeId: String,
 ) {
 
-    suspend fun sendUserEvent(
-        storeId: String,
-        request: UserEventRequest
-    ): Result<Unit> {
-        return try {
-
-            AnalyticsDebugStore.add(
-                name = request.name,
-                details = buildString {
-                    append("assetType: ${request.auxData.assetType}")
-                    append(", position: ${request.auxData.position}")
-                    append(", fixedPosition: ${request.auxData.fixedPosition}")
-                }
-            )
-
-            val response = api.sendUserEvent(
+    suspend fun send(event: AnalyticsEventRequest): Result<Unit> {
+        return runCatching {
+            val response = api.sendEvent(
                 storeId = storeId,
-                body = request
+                event = event
             )
 
-            if (response.isSuccessful) {
-                Result.success(Unit)
-            } else {
-                Result.failure(
-                    IllegalStateException(
-                        "Analytics request failed: code=${response.code()}"
-                    )
+            if (!response.isSuccessful) {
+                error(
+                    "Analytics error ${response.code()}: " +
+                            response.errorBody()?.string()
                 )
             }
-        } catch (e: Exception) {
-            Result.failure(e)
         }
     }
 }

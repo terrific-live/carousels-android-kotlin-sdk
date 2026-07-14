@@ -1,5 +1,6 @@
 package demo.terrific.compose.analytics
 
+import android.util.Log
 import demo.terrific.compose.model.analytics.AuxData
 import demo.terrific.compose.model.analytics.UserEventRequest
 import demo.terrific.compose.repository.analytics.TerrificAnalyticsRepository
@@ -32,37 +33,15 @@ internal class TerrificAnalyticsManager(
 
         analyticsListenerProvider()?.onAnalyticsEventTracked(request)
 
-//        scope.launch {
-//            repository.sendUserEvent(storeId, request)
-//        }
-    }
-
-    fun trackTimelineAssetViewStarted(
-        assetType: String,
-        position: Int,
-        fixedPosition: Int = position,
-        products: List<String> = emptyList(),
-        customProducts: List<String> = emptyList()
-    ) {
-        val request = UserEventRequest(
-            userId = sessionStorage.getOrCreateUserId(),
-            sessionId = sessionStorage.getOrCreateSessionId(storeId),
-            auxData = AuxData(
-                assetType = assetType,
-                customProducts = customProducts,
-                parentUrl = parentUrl,
-                fixedPosition = fixedPosition,
-                products = products,
-                position = position
-            ),
-            name = AnalyticsEvent.TimelineAssetViewStarted.name
-        )
-
         scope.launch {
-            repository.sendUserEvent(
-                storeId = storeId,
-                request = request
-            )
+//            try {
+//                val response = repository.send(storeId, request)
+//
+//                Log.d("Analytics", "Response code: ${response.code()}")
+//
+//            } catch (e: Exception) {
+//                Log.e("Analytics", "Failed to send analytics", e)
+//            }
         }
     }
 }

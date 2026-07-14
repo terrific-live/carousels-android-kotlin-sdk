@@ -79,13 +79,13 @@ fun VideoCarousel(
     LaunchedEffect(pagerState.currentPage, players) {
         players.forEachIndexed { index, player ->
             player.playWhenReady = index == pagerState.currentPage
-            VideoSdk.analytics().trackTimelineAssetViewStarted(
-                assetType = "video",
-                position = 0,
-                fixedPosition = 0,
-                emptyList(),
-                emptyList()
-            )
+//            VideoSdk.analytics().trackTimelineAssetViewStarted(
+//                assetType = "video",
+//                position = 0,
+//                fixedPosition = 0,
+//                emptyList(),
+//                emptyList()
+//            )
         }
     }
 
@@ -233,7 +233,14 @@ fun VideoCard(
                 onVideoClick(video.id)
                 VideoSdk.analytics().trackEvent(
                     event = AnalyticsEvent.TimelineCarouselClicked,
-                    auxData = AuxData(assetType = "video")
+                    auxData = AuxData(
+//                        assetType = "video",
+//                        assetId = video.id,
+//                        assetIds = emptyList(),
+//                        assetTimestamps = emptyList(),
+                        parentUrl = "",
+//                        totalAssets = 1
+                    )
                 )
             }
     ) {

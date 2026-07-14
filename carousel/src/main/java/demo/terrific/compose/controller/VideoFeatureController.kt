@@ -105,7 +105,13 @@ internal class VideoFeatureController(
                 VideoSdk.analytics().trackEvent(
                     AnalyticsEvent.TimelineCarouselLoaded,
                     AuxData(
-                        assets = resp.assets
+//                        assetId = 0.toString(),
+//                        assetIds = emptyList(),
+//                        assetTimestamps = emptyList(),
+                        parentUrl = "",
+//                        totalAssets = 1,
+//                        assetType = "image",
+
                     )
                 )
             }.onFailure { throwable ->
