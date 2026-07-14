@@ -50,7 +50,14 @@ fun CarouselImage(
                 onVideoClick(asset.id)
                 VideoSdk.analytics().trackEvent(
                     event = AnalyticsEvent.TimelineCarouselClicked,
-                    auxData = AuxData(assetType = "video")
+                    auxData = AuxData(
+//                        assetType = "image",
+//                        assetId = asset.id,
+//                        assetIds = emptyList(),
+//                        assetTimestamps = emptyList(),
+                        parentUrl = "",
+//                        totalAssets = 1
+                        )
                 )
             }
     ) {

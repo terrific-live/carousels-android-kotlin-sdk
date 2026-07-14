@@ -103,20 +103,27 @@ fun VerticalScreen(
         mutableStateOf(false)
     }
 
-    LaunchedEffect(pagerState) {
-        VideoSdk.analytics().trackEvent(
-            AnalyticsEvent.TimelineOpened,
-            AuxData(
-                assets = assets
-            )
-        )
-    }
+
 
     VerticalPager(
         state = pagerState,
         modifier = Modifier.fillMaxSize()
     ) { page ->
         val asset = assets[page]
+
+        LaunchedEffect(pagerState) {
+            VideoSdk.analytics().trackEvent(
+                AnalyticsEvent.TimelineOpened,
+                AuxData(
+//                    assetType = "image",
+//                    assetId = asset.id,
+//                    assetIds = emptyList(),
+//                    assetTimestamps = emptyList(),
+                    parentUrl = "",
+//                    totalAssets = 1
+                )
+            )
+        }
 
         VerticalScreenPage(
             asset = asset,

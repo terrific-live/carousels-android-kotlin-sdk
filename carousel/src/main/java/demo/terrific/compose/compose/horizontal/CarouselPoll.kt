@@ -79,7 +79,13 @@ fun PollCarouselItem(
                     VideoSdk.analytics().trackEvent(
                         event = AnalyticsEvent.TimelineCarouselClicked,
                         auxData = AuxData(
-                            assetType = "poll",
+//                            assetId = assetId,
+//                            assetIds = emptyList(),
+//                            assetTimestamps = emptyList(),
+                            parentUrl = "",
+//                            totalAssets = 1,
+//                            assetType = "poll",
+
                         )
                     )
                 },

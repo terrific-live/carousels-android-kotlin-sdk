@@ -1,11 +1,13 @@
 package demo.terrific.compose
 
 import android.content.Context
-import androidx.annotation.StringDef
+import android.util.Log
+import com.google.gson.Gson
 import demo.terrific.compose.analytics.TerrificAnalyticsManager
 import demo.terrific.compose.analytics.VideoSdkAnalyticsListener
 import demo.terrific.compose.network.TerrificAnalyticsApi
 import demo.terrific.compose.network.VideoApi
+import demo.terrific.compose.network.interceptor.AnalyticsLoggingInterceptor
 import demo.terrific.compose.repository.VideoRepository
 import demo.terrific.compose.repository.VideoRepositoryImpl
 import demo.terrific.compose.repository.analytics.TerrificAnalyticsRepository
@@ -16,10 +18,17 @@ import demo.terrific.compose.storage.likes.SharedPrefsLikesStorage
 import demo.terrific.compose.storage.storage.PollStorage
 import demo.terrific.compose.storage.storage.SharedPrefsPollStorage
 import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object VideoSdk {
+
+    private const val MAIN_BASE_URL =
+        "https://terrific-staging-polls.web.app/"
+
+    private const val ANALYTICS_BASE_URL =
+        "https://us-central1-terrific-deploy.cloudfunctions.net/userEvents/"
 
     @Volatile
     private var isInitialized = false
@@ -40,28 +49,41 @@ object VideoSdk {
     ) {
         if (isInitialized) return
 
-        val client = OkHttpClient.Builder().addInterceptor { chain ->
-            val requestBuilder = chain.request().newBuilder()
-            chain.proceed(requestBuilder.build())
-        }.build()
+        val gson = Gson()
 
-        val retrofit = Retrofit.Builder()
-            .baseUrl("https://terrific-live-polls.web.app/")
-            .client(client)
-            .addConverterFactory(GsonConverterFactory.create())
+        val client = OkHttpClient.Builder()
+            .addInterceptor(AnalyticsLoggingInterceptor())
             .build()
 
-        val api = retrofit.create(VideoApi::class.java)
-        val analyticsApi = retrofit.create(TerrificAnalyticsApi::class.java)
+        val mainRetrofit = Retrofit.Builder()
+            .baseUrl(MAIN_BASE_URL)
+            .client(client)
+            .addConverterFactory(GsonConverterFactory.create(gson))
+            .build()
 
-        repository = VideoRepositoryImpl(api)
-        likesStorage = SharedPrefsLikesStorage(context.applicationContext)
-        pollStorage = SharedPrefsPollStorage(context.applicationContext)
+        val analyticsRetrofit = Retrofit.Builder()
+            .baseUrl(ANALYTICS_BASE_URL)
+            .client(client)
+            .addConverterFactory(GsonConverterFactory.create(gson))
+            .build()
+
+        val videoApi = mainRetrofit.create(VideoApi::class.java)
+        val analyticsApi =
+            analyticsRetrofit.create(TerrificAnalyticsApi::class.java)
+
+        repository = VideoRepositoryImpl(videoApi)
+
+        likesStorage =
+            SharedPrefsLikesStorage(context.applicationContext)
+
+        pollStorage =
+            SharedPrefsPollStorage(context.applicationContext)
 
         analyticsSessionStorage =
             SharedPrefsAnalyticsSessionStorage(context.applicationContext)
 
-        val analyticsRepository = TerrificAnalyticsRepository(analyticsApi)
+        val analyticsRepository =
+            TerrificAnalyticsRepository(analyticsApi, "")
 
         analyticsManager = TerrificAnalyticsManager(
             storeId = storeId,
