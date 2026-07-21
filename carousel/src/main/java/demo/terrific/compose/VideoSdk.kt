@@ -1,7 +1,6 @@
 package demo.terrific.compose
 
 import android.content.Context
-import androidx.annotation.StringDef
 import demo.terrific.compose.analytics.TerrificAnalyticsManager
 import demo.terrific.compose.analytics.VideoSdkAnalyticsListener
 import demo.terrific.compose.network.TerrificAnalyticsApi
@@ -20,6 +19,12 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object VideoSdk {
+
+    private const val MAIN_BASE_URL =
+        "https://terrific-live-polls.web.app/"
+
+    private const val ANALYTICS_BASE_URL =
+        "https://us-central1-terrific-deploy.cloudfunctions.net/userEvents/"
 
     @Volatile
     private var isInitialized = false

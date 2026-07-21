@@ -57,7 +57,7 @@ fun PollCarouselItem(
             contentScale = ContentScale.FillBounds
         )
 
-        val backgroundModifier =
+        val backgroundModifier = if (asset.background == null) {
             Modifier.background(
                 Brush.verticalGradient(
                     listOf(
@@ -66,6 +66,10 @@ fun PollCarouselItem(
                     )
                 )
             )
+        } else {
+            Modifier
+        }
+
 
 
         Box(
@@ -85,6 +89,16 @@ fun PollCarouselItem(
                 },
             contentAlignment = Alignment.Center
         ) {
+
+            asset.background?.let {
+                AsyncImage(
+                    model = asset.background,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.matchParentSize()
+                )
+            }
+
 
             val formatted = remember(asset.timestamp) {
                 timestampFormat?.let { asset.timestamp?.toFormatted(it) }

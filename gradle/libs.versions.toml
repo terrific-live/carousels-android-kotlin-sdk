@@ -25,6 +25,7 @@ material3 = "1.4.0"
 espressoCoreVersion = "3.7.0"
 foundationLayout = "1.10.6"
 roomKtx = "2.8.4"
+vanniktechMavenPublish = "0.37.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -78,6 +79,6 @@ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "ko
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 android-library = { id = "com.android.library", version.ref = "agp" }
-maven-publish = { id = "maven-publish" }
+maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "vanniktechMavenPublish" }
 
 

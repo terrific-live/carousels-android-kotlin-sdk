@@ -35,13 +35,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import coil.compose.AsyncImage
+import demo.terrific.compose.compose.common.DateTimeBadge
 import demo.terrific.compose.compose.common.VideoProgressBar
+import demo.terrific.compose.compose.common.toFormatted
 import demo.terrific.compose.compose.horizontal.toComposeColorOrNull
 import demo.terrific.compose.model.AssetDto
 import demo.terrific.compose.model.PollOptionDto
@@ -79,8 +83,8 @@ fun PollScreen(
         }
     }
 
-    Box(
-        modifier = Modifier.background(
+    val backgroundModifier = if (asset.background == null) {
+        Modifier.background(
             Brush.verticalGradient(
                 listOf(
                     asset.background?.color?.primary?.toComposeColorOrNull() ?: Color(0xFFA61E2C),
@@ -88,7 +92,22 @@ fun PollScreen(
                 )
             )
         )
+    } else {
+        Modifier
+    }
+
+    Box(
+        modifier = Modifier.fillMaxSize().then(backgroundModifier)
     ) {
+
+        asset.background?.let {
+            AsyncImage(
+                model = asset.background?.imageUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
 
         sponsorship?.badge?.let {
             SponsorshipBadge(
@@ -247,8 +266,7 @@ private fun PollResultOption(
                 .background(
                     if (isSelected) {
                         Color(0xFFB8B8B8)
-                    }
-                    else {
+                    } else {
                         Color(0xFFD7D7D7)
                     }
                 )
@@ -303,21 +321,15 @@ fun PollOverlay(
         }
 
 
-//        val formatted = remember(asset.timestamp) {
-//            asset.timestamp?.toFormatted()
-//        }
+        val formatted = remember(asset.timestamp) {
+            asset.timestamp?.toFormatted()
+        }
 
-        // DATE
+//         DATE
 
-//        if (formatted?.isNotEmpty() == true) {
-//            Text(
-//                text = formatted,
-//                modifier = Modifier
-//                    .align(Alignment.TopStart)
-//                    .background(Color.White.copy(alpha = 0.8f))
-//                    .padding(6.dp)
-//            )
-//        }
+        if (formatted?.isNotEmpty() == true) {
+            DateTimeBadge(formatted)
+        }
 
         // RIGHT ACTIONS
         Column(
@@ -327,9 +339,11 @@ fun PollOverlay(
         ) {
 
             IconButton(onClick = { onLikeClick(asset.id) }) {
-                Icon(imageVector = if (isLiked) Icons.Default.ThumbUp else Icons.Default.ThumbUpOffAlt,
+                Icon(
+                    imageVector = if (isLiked) Icons.Default.ThumbUp else Icons.Default.ThumbUpOffAlt,
                     contentDescription = "Like",
-                    tint = if (isLiked) Color.White else Color.White)
+                    tint = if (isLiked) Color.White else Color.White
+                )
             }
 
             Spacer(Modifier.height(12.dp))

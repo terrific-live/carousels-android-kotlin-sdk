@@ -1,3 +1,7 @@
+import com.vanniktech.maven.publish.AndroidSingleVariantLibrary
+import com.vanniktech.maven.publish.JavadocJar
+import com.vanniktech.maven.publish.SourcesJar
+
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.maven.publish)
@@ -20,11 +24,6 @@ android {
         compose = true
     }
 
-
-    publishing {
-        singleVariant("release")
-    }
-
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -37,19 +36,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
-    }
-
-    afterEvaluate {
-        publishing {
-            publications {
-                create<MavenPublication>("release") {
-                    from(components["release"])
-                    groupId = "com.github.terrific"
-                    artifactId = "video-feed"
-                    version = "1.0.0"
-                }
-            }
-        }
     }
 }
 
@@ -69,7 +55,72 @@ dependencies {
 
     implementation("androidx.media3:media3-exoplayer:1.10.0")
     implementation("androidx.media3:media3-ui:1.10.0")
-    implementation("androidx.test.espresso:espresso-core:3.7.0")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
     implementation("androidx.compose.foundation:foundation-layout:1.10.6")
     implementation("io.coil-kt:coil-compose:2.5.0")
+}
+
+mavenPublishing {
+    configure(
+        AndroidSingleVariantLibrary(
+            variant = "release",
+            sourcesJar = SourcesJar.Sources(),
+            javadocJar = JavadocJar.Empty()
+        )
+    )
+
+    publishToMavenCentral()
+    signAllPublications()
+
+    coordinates(
+        groupId = "io.github.terrific-live",
+        artifactId = "carousels-android-kotlin-sdk",
+        version = "1.0.6"
+    )
+
+    pom {
+        name.set("Terrific Live Carousel SDK")
+
+        description.set(
+            "Android SDK for displaying interactive video, image and poll carousels."
+        )
+
+        inceptionYear.set("2026")
+
+        url.set(
+            "https://github.com/terrific-live/carousels-android-kotlin-sdk"
+        )
+
+        licenses {
+            license {
+                name.set("The Apache License, Version 2.0")
+                url.set(
+                    "https://www.apache.org/licenses/LICENSE-2.0.txt"
+                )
+                distribution.set("repo")
+            }
+        }
+
+        developers {
+            developer {
+                id.set("terrific-live")
+                name.set("Terrific Live")
+                url.set("https://github.com/terrific-live")
+            }
+        }
+
+        scm {
+            url.set(
+                "https://github.com/terrific-live/carousels-android-kotlin-sdk"
+            )
+
+            connection.set(
+                "scm:git:https://github.com/terrific-live/carousels-android-kotlin-sdk.git"
+            )
+
+            developerConnection.set(
+                "scm:git:ssh://git@github.com/terrific-live/carousels-android-kotlin-sdk.git"
+            )
+        }
+    }
 }
