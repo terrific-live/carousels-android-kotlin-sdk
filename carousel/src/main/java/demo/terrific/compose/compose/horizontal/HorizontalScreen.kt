@@ -296,6 +296,20 @@ fun VideoCard(
                 )
             }
 
+            Spacer(Modifier.height(6.dp))
+
+            video.description?.let {
+                Text(
+                    text = it,
+                    color = Color.White,
+                    fontWeight = FontWeight.SemiBold,
+                    lineHeight = 24.sp,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    style = style.bodyTextStyle.withSdkFont(style.fontFamily)
+                )
+            }
+
         }
     }
 }
