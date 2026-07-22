@@ -6,6 +6,7 @@ plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.maven.publish)
     alias(libs.plugins.kotlin.compose)
+    signing
 }
 
 android {
@@ -75,7 +76,7 @@ mavenPublishing {
     coordinates(
         groupId = "io.github.terrific-live",
         artifactId = "carousels-android-kotlin-sdk",
-        version = "1.0.6"
+        version = "1.0.9"
     )
 
     pom {
@@ -123,4 +124,14 @@ mavenPublishing {
             )
         }
     }
+}
+
+// signAllPublications() needs a signatory. Both locally and in CI we sign with the
+// gpg command (GnuPG signatory), which reads the signing.gnupg.* properties:
+//   - Locally:  from ~/.gradle/gradle.properties (signing.gnupg.keyName, etc.)
+//   - In CI:    passed on the command line (-Psigning.gnupg.keyName / .executable)
+// Without useGpgCmd() the plugin looks for an in-memory / keyring signatory and
+// fails with "no configured signatory".
+signing {
+    useGpgCmd()
 }
