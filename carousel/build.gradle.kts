@@ -74,7 +74,7 @@ mavenPublishing {
     signAllPublications()
 
     coordinates(
-        groupId = "io.github.terrific-live",
+        groupId = "live.terrific",
         artifactId = "carousels-android-kotlin-sdk",
         version = "1.0.9"
     )
