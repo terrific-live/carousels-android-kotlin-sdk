@@ -47,15 +47,23 @@ jobs:
         env:
           SIGNING_KEY_BASE64: ${{ secrets.SIGNING_KEY_BASE64 }}
         run: |
+          # Fail fast; never trace commands (avoids leaking the key via `set -x`).
+          set -eu
           # Allow headless (loopback) signing with gpg 2.x.
           mkdir -p ~/.gnupg
           chmod 700 ~/.gnupg
-          echo "allow-loopback-pinentry" >> ~/.gnupg/gpg-agent.conf
-          echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
+          printf '%s\n' "allow-loopback-pinentry" >> ~/.gnupg/gpg-agent.conf
+          printf '%s\n' "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
           gpgconf --kill gpg-agent || true
-          # Import the (base64-encoded, ASCII-armored) private key.
-          echo "$SIGNING_KEY_BASE64" | base64 --decode | gpg --batch --import
-          gpg --list-secret-keys --keyid-format long
+          # Decode the key to a private, mode-600 temp file, import it, then delete it.
+          # The key is never echoed to stdout; it only flows through files/pipes.
+          umask 077
+          keyfile="$(mktemp)"
+          trap 'rm -f "$keyfile"' EXIT
+          base64 --decode <<< "$SIGNING_KEY_BASE64" > "$keyfile"
+          gpg --batch --import "$keyfile"
+          # Print only public key metadata (ids/uids) for verification — no secret material.
+          gpg --list-keys --keyid-format long
 
       - name: Build release
         run: ./gradlew :carousel:assembleRelease --stacktrace
