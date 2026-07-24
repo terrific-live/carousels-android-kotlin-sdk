@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PageSize
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -28,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -39,6 +42,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import coil.compose.AsyncImage
 import demo.terrific.compose.VideoSdk
 import demo.terrific.compose.analytics.AnalyticsEvent
 import demo.terrific.compose.compose.common.DateTimeBadgeCarousel
@@ -60,155 +64,138 @@ fun VideoCarousel(
     style: VideoFeatureStyle,
     onVideoClick: (String) -> Unit
 ) {
-    val context = LocalContext.current
-    val pagerState = rememberPagerState(pageCount = { assets.size })
+    val pagerState = rememberPagerState(
+        pageCount = { assets.size }
+    )
 
-    val players = remember(assets) {
-        assets.map { asset ->
-            ExoPlayer.Builder(context).build().apply {
-                asset.media?.videoPreviewUrl?.let { url ->
-                    setMediaItem(MediaItem.fromUri(url))
-                }
-                prepare()
-                playWhenReady = false
-                repeatMode = Player.REPEAT_MODE_ONE
-            }
-        }
-    }
+    LaunchedEffect(pagerState.currentPage, assets) {
 
-    LaunchedEffect(pagerState.currentPage, players) {
-        players.forEachIndexed { index, player ->
-            player.playWhenReady = index == pagerState.currentPage
-            VideoSdk.analytics().trackTimelineAssetViewStarted(
-                assetType = "video",
-                position = 0,
-                fixedPosition = 0,
-                emptyList(),
-                emptyList()
-            )
-        }
-    }
-
-    DisposableEffect(players) {
-        onDispose {
-            players.forEach { it.release() }
-        }
+        VideoSdk.analytics().trackTimelineAssetViewStarted(
+            assetType = "video",
+            position = pagerState.currentPage,
+            fixedPosition = pagerState.currentPage,
+            emptyList(),
+            emptyList()
+        )
     }
 
     LaunchedEffect(assets.size) {
         if (assets.size <= 1) return@LaunchedEffect
 
         while (true) {
-            delay(2000)
+            delay(2_000)
 
             if (!pagerState.isScrollInProgress) {
-                val nextPage = if (pagerState.currentPage == assets.lastIndex) {
-                    0
-                } else {
-                    pagerState.currentPage + 1
-                }
+                val nextPage =
+                    if (pagerState.currentPage == assets.lastIndex) {
+                        0
+                    } else {
+                        pagerState.currentPage + 1
+                    }
 
-//                pagerState.animateScrollToPage(nextPage)
+                // pagerState.animateScrollToPage(nextPage)
             }
         }
     }
 
-//    Box(
-//        modifier = Modifier.fillMaxSize(),
-//        contentAlignment = Alignment.Center
-//    ) {
-//        HorizontalPager(
-//            state = pagerState,
-//            contentPadding = PaddingValues(horizontal = style.pagerHorizontalPadding),
-//            pageSpacing = style.pagerPageSpacing,
-//            modifier = Modifier
-//                .fillMaxSize()
-//                .height(style.pageHeight)
-//        ) { page ->
-
-//    Column() {
-//
-//        config?.name?.let {
-//            Text(
-//                text = it,
-//                color = Color.White,
-//                fontSize = 20.sp,
-//                fontWeight = FontWeight.SemiBold,
-//                lineHeight = 24.sp,
-//                maxLines = 3,
-//                overflow = TextOverflow.Ellipsis
-//            )
-//        }
-//
-
-    HorizontalPager(
-        state = pagerState,
-        contentPadding = PaddingValues(horizontal = 32.dp),
-        pageSpacing = 8.dp,
+    BoxWithConstraints(
         modifier = Modifier.fillMaxSize(),
-        verticalAlignment = Alignment.CenterVertically
-    ) { page ->
-        val asset = assets[page]
-        val hasProducts = asset.products?.isNotEmpty() == true
+        contentAlignment = Alignment.Center
+    ) {
+        val pageWidth = maxWidth * 0.6f
+        val horizontalPadding = (maxWidth - pageWidth) / 2
 
-        Column(
+        HorizontalPager(
+            state = pagerState,
+            pageSize = PageSize.Fixed(pageWidth),
+            contentPadding = PaddingValues(
+                horizontal = horizontalPadding
+            ),
+            pageSpacing = 16.dp,
             modifier = Modifier
-                .height(style.carouselHeight)
-                .fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Box(
+                .fillMaxWidth()
+                .height(style.carouselHeight),
+            verticalAlignment = Alignment.CenterVertically,
+            beyondViewportPageCount = 1
+        ) { page ->
+            val asset = assets[page]
+            val hasProducts = asset.products?.isNotEmpty() == true
+
+            val shouldPrepareVideo =
+                asset.type == AssetType.VIDEO.type &&
+                        kotlin.math.abs(page - pagerState.currentPage) <= 1
+
+
+            val isCurrentPage =
+                page == pagerState.currentPage &&
+                        !pagerState.isScrollInProgress
+
+            Column(
                 modifier = Modifier
-                    .weight(1f)
-                    .aspectRatio(9f / 16f)
-                    .clip(RoundedCornerShape(style.cornerRadius))
+                    .height(style.carouselHeight)
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-
-                when (asset.type) {
-                    AssetType.POLL.type -> {
-                        PollCarouselItem(
-                            asset = asset,
-                            timestampFormat = timestampFormat,
-                            assetId = asset.id,
-                            onClick = onVideoClick,
-                            modifier = Modifier.fillMaxSize(),
-                            style = style
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .aspectRatio(9f / 16f)
+                        .clip(
+                            RoundedCornerShape(
+                                style.cornerRadius
+                            )
                         )
-                    }
+                ) {
+                    when (asset.type) {
+                        AssetType.POLL.type -> {
+                            PollCarouselItem(
+                                asset = asset,
+                                timestampFormat = timestampFormat,
+                                assetId = asset.id,
+                                onClick = onVideoClick,
+                                modifier = Modifier.fillMaxSize(),
+                                style = style
+                            )
+                        }
 
-                    AssetType.VIDEO.type -> {
-                        VideoCard(
-                            video = asset,
-                            timestampFormat = timestampFormat,
-                            player = players[page],
-                            onVideoClick = onVideoClick,
-                            textBottomPadding = if (hasProducts) 68.dp else 20.dp,
-                            style = style
-                        )
-                    }
+                        AssetType.VIDEO.type -> {
+                            VideoCard(
+                                video = asset,
+                                timestampFormat = timestampFormat,
+                                shouldPrepare = shouldPrepareVideo,
+                                isActive = isCurrentPage,
+                                onVideoClick = onVideoClick,
+                                textBottomPadding =
+                                    if (hasProducts) 68.dp else 20.dp,
+                                style = style
+                            )
+                        }
 
-                    AssetType.IMAGE.type -> {
-                        CarouselImage(
-                            asset = asset,
-                            timestampFormat = timestampFormat,
-                            onVideoClick = onVideoClick,
-                            style = style
-                        )
+                        AssetType.IMAGE.type -> {
+                            CarouselImage(
+                                asset = asset,
+                                timestampFormat = timestampFormat,
+                                onVideoClick = onVideoClick,
+                                style = style
+                            )
+                        }
                     }
                 }
-            }
 
-            if (hasProducts) {
-                Spacer(modifier = Modifier.height(style.productSpacing))
+                if (hasProducts) {
+                    Spacer(
+                        modifier = Modifier.height(
+                            style.productSpacing
+                        )
+                    )
 
-                TimelineProductsRowCarousel(
-                    products = asset.products,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                    ,
-                    style = style
-                )
+                    TimelineProductsRowCarousel(
+                        products = asset.products,
+                        modifier = Modifier.fillMaxWidth(),
+                        style = style
+                    )
+                }
             }
         }
     }
@@ -219,9 +206,77 @@ fun VideoCard(
     video: AssetDto,
     timestampFormat: String?,
     modifier: Modifier = Modifier,
-    player: ExoPlayer,
+    shouldPrepare: Boolean,
+    isActive: Boolean,
     onVideoClick: (String) -> Unit,
     textBottomPadding: Dp = 68.dp,
+    style: VideoFeatureStyle
+) {
+    val context = LocalContext.current
+    val videoUrl = video.media?.videoPreviewUrl
+
+    if (!shouldPrepare || videoUrl.isNullOrBlank()) {
+        VideoCardContent(
+            video = video,
+            timestampFormat = timestampFormat,
+            modifier = modifier,
+            player = null,
+            onVideoClick = onVideoClick,
+            textBottomPadding = textBottomPadding,
+            style = style
+        )
+
+        return
+    }
+
+    val player = remember(video.id, videoUrl) {
+        ExoPlayer.Builder(context.applicationContext)
+            .build()
+            .apply {
+                setMediaItem(MediaItem.fromUri(videoUrl))
+                repeatMode = Player.REPEAT_MODE_ONE
+                playWhenReady = false
+                prepare()
+            }
+    }
+
+    LaunchedEffect(player, isActive) {
+        if (isActive) {
+            player.playWhenReady = true
+            player.play()
+        } else {
+            player.playWhenReady = false
+            player.pause()
+        }
+    }
+
+    DisposableEffect(player) {
+        onDispose {
+            player.playWhenReady = false
+            player.stop()
+            player.release()
+        }
+    }
+
+    VideoCardContent(
+        video = video,
+        timestampFormat = timestampFormat,
+        modifier = modifier,
+        player = player,
+        onVideoClick = onVideoClick,
+        textBottomPadding = textBottomPadding,
+        style = style
+    )
+}
+
+@Composable
+private fun VideoCardContent(
+    video: AssetDto,
+    timestampFormat: String?,
+    modifier: Modifier,
+    player: ExoPlayer?,
+    onVideoClick: (String) -> Unit,
+    textBottomPadding: Dp,
     style: VideoFeatureStyle
 ) {
     Box(
@@ -231,21 +286,45 @@ fun VideoCard(
             .background(Color.Black)
             .clickable {
                 onVideoClick(video.id)
+
                 VideoSdk.analytics().trackEvent(
                     event = AnalyticsEvent.TimelineCarouselClicked,
                     auxData = AuxData(assetType = "video")
                 )
             }
     ) {
-        AndroidView(
-            factory = {
-                PlayerView(it).apply {
-                    this.player = player
-                    useController = false
-                }
-            },
-            modifier = Modifier.fillMaxSize()
-        )
+        if (player != null) {
+            AndroidView(
+                factory = { viewContext ->
+                    PlayerView(viewContext).apply {
+                        this.player = player
+                        useController = false
+                    }
+                },
+                update = { playerView ->
+                    if (playerView.player !== player) {
+                        playerView.player = player
+                    }
+                },
+                onRelease = { playerView ->
+                    playerView.player = null
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            /*
+             * Тут бажано показати preview image,
+             * thumbnail або background asset.
+             */
+            video.background?.imageUrl?.let { previewUrl ->
+                AsyncImage(
+                    model = previewUrl,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            }
+        }
 
         Box(
             modifier = Modifier
@@ -261,11 +340,16 @@ fun VideoCard(
                 )
         )
 
-        val formatted = remember(video.timestamp) {
-            timestampFormat?.let { video.timestamp?.toFormatted(it) }
+        val formatted = remember(
+            video.timestamp,
+            timestampFormat
+        ) {
+            timestampFormat?.let {
+                video.timestamp?.toFormatted(it)
+            }
         }
 
-        if (formatted?.isNotEmpty() == true) {
+        if (!formatted.isNullOrEmpty()) {
             DateTimeBadgeCarousel(
                 text = formatted,
                 modifier = Modifier
@@ -284,32 +368,37 @@ fun VideoCard(
                     bottom = textBottomPadding
                 )
         ) {
-            video.title?.let {
+            video.title?.let { title ->
                 Text(
-                    text = it,
+                    text = title,
                     color = Color.White,
                     fontWeight = FontWeight.SemiBold,
                     lineHeight = 24.sp,
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
-                    style = style.subtitleTextStyle.withSdkFont(style.fontFamily)
+                    style = style.subtitleTextStyle.withSdkFont(
+                        style.fontFamily
+                    )
                 )
             }
 
-            Spacer(Modifier.height(6.dp))
+            Spacer(
+                modifier = Modifier.height(6.dp)
+            )
 
-            video.description?.let {
+            video.description?.let { description ->
                 Text(
-                    text = it,
+                    text = description,
                     color = Color.White,
                     fontWeight = FontWeight.SemiBold,
                     lineHeight = 24.sp,
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
-                    style = style.bodyTextStyle.withSdkFont(style.fontFamily)
+                    style = style.bodyTextStyle.withSdkFont(
+                        style.fontFamily
+                    )
                 )
             }
-
         }
     }
 }

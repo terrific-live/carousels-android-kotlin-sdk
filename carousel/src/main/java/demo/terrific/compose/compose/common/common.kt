@@ -117,10 +117,12 @@ private fun formatTimestamp(
 ): String {
     return pattern
         .replace("{hh}", "hh")
+        .replace("{HH}", "HH")
         .replace("{mm}", "mm")
         .replace("{DD}", "dd")
         .replace("{MM}", "MM")
         .replace("{YY}", "YY")
         .replace("{YYYY}", "YYYY")
         .replace("{hh}h{mm}", "hhhmm")
+        .replace("{HH}H{mm}", "HHHmm")
 }

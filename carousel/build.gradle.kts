@@ -56,6 +56,7 @@ dependencies {
 
     implementation("androidx.media3:media3-exoplayer:1.10.0")
     implementation("androidx.media3:media3-ui:1.10.0")
+    implementation(libs.androidx.compose.ui.unit)
     androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
     implementation("androidx.compose.foundation:foundation-layout:1.10.6")
     implementation("io.coil-kt:coil-compose:2.5.0")
@@ -76,7 +77,7 @@ mavenPublishing {
     coordinates(
         groupId = "live.terrific",
         artifactId = "carousels-android-kotlin-sdk",
-        version = "1.0.10"
+        version = "1.0.11"
     )
 
     pom {

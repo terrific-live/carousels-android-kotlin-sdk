@@ -16,7 +16,6 @@ import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.VolumeUp
@@ -230,25 +229,45 @@ fun FullscreenVideoPlayer(
     var progress by remember { mutableFloatStateOf(0f) }
 
     val player = remember(video.id) {
-        ExoPlayer.Builder(context).build().apply {
-            video.media?.mobileUrl?.let { setMediaItem(MediaItem.fromUri(it)) }
-            prepare()
-            playWhenReady = true
-            repeatMode = Player.REPEAT_MODE_ONE
-        }
+        ExoPlayer.Builder(context.applicationContext)
+            .build()
+            .apply {
+                video.media?.mobileUrl?.let {
+                    setMediaItem(MediaItem.fromUri(it))
+                }
+
+                prepare()
+                playWhenReady = false
+                repeatMode = Player.REPEAT_MODE_ONE
+            }
     }
 
-    var isLoading by remember { mutableStateOf(true) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isLoading by remember(video.id) {
+        mutableStateOf(true)
+    }
+
+    var errorMessage by remember(video.id) {
+        mutableStateOf<String?>(null)
+    }
 
     DisposableEffect(player) {
         val listener = object : Player.Listener {
 
             override fun onPlaybackStateChanged(playbackState: Int) {
-                isLoading = playbackState == Player.STATE_BUFFERING
-                if (playbackState == Player.STATE_READY) {
-                    isLoading = false
-                    errorMessage = null
+                when (playbackState) {
+                    Player.STATE_BUFFERING -> {
+                        isLoading = true
+                    }
+
+                    Player.STATE_READY -> {
+                        isLoading = false
+                        errorMessage = null
+                    }
+
+                    Player.STATE_ENDED,
+                    Player.STATE_IDLE -> {
+                        isLoading = false
+                    }
                 }
             }
 
@@ -261,6 +280,8 @@ fun FullscreenVideoPlayer(
         player.addListener(listener)
 
         onDispose {
+            player.playWhenReady = false
+            player.pause()
             player.removeListener(listener)
             player.release()
         }
@@ -275,11 +296,6 @@ fun FullscreenVideoPlayer(
             player.pause()
         }
     }
-
-    DisposableEffect(player) {
-        onDispose { player.release() }
-    }
-
     LaunchedEffect(player, isActive) {
         while (isActive) {
             val duration = player.duration
@@ -299,6 +315,18 @@ fun FullscreenVideoPlayer(
 
 
     Box(modifier = Modifier.fillMaxSize()) {
+
+        video.background?.let {
+            AsyncImage(
+                model = it.imageUrl,
+                contentDescription = "background",
+                modifier = Modifier
+                    .fillMaxSize(),
+//                            .clip(RoundedCornerShape(16.dp)),
+                contentScale = ContentScale.Crop
+            )
+        }
+
         Column(modifier = Modifier.fillMaxSize()) {
             Box(
                 modifier = Modifier
@@ -319,17 +347,6 @@ fun FullscreenVideoPlayer(
                             strokeWidth = 3.dp
                         )
                     }
-                }
-
-                video.background?.let {
-                    AsyncImage(
-                        model = it.imageUrl,
-                        contentDescription = "background",
-                        modifier = Modifier
-                            .fillMaxSize(),
-//                            .clip(RoundedCornerShape(16.dp)),
-                        contentScale = ContentScale.Crop
-                    )
                 }
 
                 AndroidView(
@@ -430,7 +447,11 @@ fun VideoOverlay(
             onClick = { onBackClicked() },
             modifier = Modifier.align(Alignment.TopEnd)
         ) {
-            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+            Icon(
+                painter = painterResource(R.drawable.ic_close),
+                contentDescription = "Close",
+                tint = Color.White
+            )
         }
 
         val formatted = remember(video.timestamp) {
