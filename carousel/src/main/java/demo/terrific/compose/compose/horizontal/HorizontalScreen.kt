@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PageSize
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -58,6 +60,7 @@ import kotlinx.coroutines.delay
 fun VideoCarousel(
     assets: List<AssetDto>,
     timestampFormat: String?,
+    config: CarouselConfigDto?,
     style: VideoFeatureStyle,
     onVideoClick: (String) -> Unit
 ) {
@@ -95,91 +98,104 @@ fun VideoCarousel(
         }
     }
 
-    HorizontalPager(
-        state = pagerState,
-        contentPadding = PaddingValues(horizontal = 32.dp),
-        pageSpacing = 8.dp,
+    BoxWithConstraints(
         modifier = Modifier.fillMaxSize(),
-        verticalAlignment = Alignment.CenterVertically,
-        beyondViewportPageCount = 1
-    ) { page ->
-        val asset = assets[page]
-        val hasProducts = asset.products?.isNotEmpty() == true
+        contentAlignment = Alignment.Center
+    ) {
+        val pageWidth = maxWidth * 0.6f
+        val horizontalPadding = (maxWidth - pageWidth) / 2
 
-        val shouldPrepareVideo =
-            asset.type == AssetType.VIDEO.type &&
-                    kotlin.math.abs(page - pagerState.currentPage) <= 1
-
-
-        val isCurrentPage =
-            page == pagerState.currentPage &&
-                    !pagerState.isScrollInProgress
-
-        Column(
+        HorizontalPager(
+            state = pagerState,
+            pageSize = PageSize.Fixed(pageWidth),
+            contentPadding = PaddingValues(
+                horizontal = horizontalPadding
+            ),
+            pageSpacing = 16.dp,
             modifier = Modifier
-                .height(style.carouselHeight)
-                .fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Box(
+                .fillMaxWidth()
+                .height(style.carouselHeight),
+            verticalAlignment = Alignment.CenterVertically,
+            beyondViewportPageCount = 1
+        ) { page ->
+            val asset = assets[page]
+            val hasProducts = asset.products?.isNotEmpty() == true
+
+            val shouldPrepareVideo =
+                asset.type == AssetType.VIDEO.type &&
+                        kotlin.math.abs(page - pagerState.currentPage) <= 1
+
+
+            val isCurrentPage =
+                page == pagerState.currentPage &&
+                        !pagerState.isScrollInProgress
+
+            Column(
                 modifier = Modifier
-                    .weight(1f)
-                    .aspectRatio(9f / 16f)
-                    .clip(
-                        RoundedCornerShape(
-                            style.cornerRadius
-                        )
-                    )
+                    .height(style.carouselHeight)
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                when (asset.type) {
-                    AssetType.POLL.type -> {
-                        PollCarouselItem(
-                            asset = asset,
-                            timestampFormat = timestampFormat,
-                            assetId = asset.id,
-                            onClick = onVideoClick,
-                            modifier = Modifier.fillMaxSize(),
-                            style = style
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .aspectRatio(9f / 16f)
+                        .clip(
+                            RoundedCornerShape(
+                                style.cornerRadius
+                            )
                         )
-                    }
+                ) {
+                    when (asset.type) {
+                        AssetType.POLL.type -> {
+                            PollCarouselItem(
+                                asset = asset,
+                                timestampFormat = timestampFormat,
+                                assetId = asset.id,
+                                onClick = onVideoClick,
+                                modifier = Modifier.fillMaxSize(),
+                                style = style
+                            )
+                        }
 
-                    AssetType.VIDEO.type -> {
-                        VideoCard(
-                            video = asset,
-                            timestampFormat = timestampFormat,
-                            shouldPrepare = shouldPrepareVideo,
-                            isActive = isCurrentPage,
-                            onVideoClick = onVideoClick,
-                            textBottomPadding =
-                                if (hasProducts) 68.dp else 20.dp,
-                            style = style
-                        )
-                    }
+                        AssetType.VIDEO.type -> {
+                            VideoCard(
+                                video = asset,
+                                timestampFormat = timestampFormat,
+                                shouldPrepare = shouldPrepareVideo,
+                                isActive = isCurrentPage,
+                                onVideoClick = onVideoClick,
+                                textBottomPadding =
+                                    if (hasProducts) 68.dp else 20.dp,
+                                style = style
+                            )
+                        }
 
-                    AssetType.IMAGE.type -> {
-                        CarouselImage(
-                            asset = asset,
-                            timestampFormat = timestampFormat,
-                            onVideoClick = onVideoClick,
-                            style = style
-                        )
+                        AssetType.IMAGE.type -> {
+                            CarouselImage(
+                                asset = asset,
+                                timestampFormat = timestampFormat,
+                                onVideoClick = onVideoClick,
+                                style = style
+                            )
+                        }
                     }
                 }
-            }
 
-            if (hasProducts) {
-                Spacer(
-                    modifier = Modifier.height(
-                        style.productSpacing
+                if (hasProducts) {
+                    Spacer(
+                        modifier = Modifier.height(
+                            style.productSpacing
+                        )
                     )
-                )
 
-                TimelineProductsRowCarousel(
-                    products = asset.products,
-                    modifier = Modifier.fillMaxWidth(),
-                    style = style
-                )
+                    TimelineProductsRowCarousel(
+                        products = asset.products,
+                        modifier = Modifier.fillMaxWidth(),
+                        style = style
+                    )
+                }
             }
         }
     }

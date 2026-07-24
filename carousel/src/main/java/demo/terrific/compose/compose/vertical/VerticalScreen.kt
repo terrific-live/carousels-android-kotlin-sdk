@@ -16,7 +16,6 @@ import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.VolumeUp
@@ -316,6 +315,18 @@ fun FullscreenVideoPlayer(
 
 
     Box(modifier = Modifier.fillMaxSize()) {
+
+        video.background?.let {
+            AsyncImage(
+                model = it.imageUrl,
+                contentDescription = "background",
+                modifier = Modifier
+                    .fillMaxSize(),
+//                            .clip(RoundedCornerShape(16.dp)),
+                contentScale = ContentScale.Crop
+            )
+        }
+
         Column(modifier = Modifier.fillMaxSize()) {
             Box(
                 modifier = Modifier
@@ -336,17 +347,6 @@ fun FullscreenVideoPlayer(
                             strokeWidth = 3.dp
                         )
                     }
-                }
-
-                video.background?.let {
-                    AsyncImage(
-                        model = it.imageUrl,
-                        contentDescription = "background",
-                        modifier = Modifier
-                            .fillMaxSize(),
-//                            .clip(RoundedCornerShape(16.dp)),
-                        contentScale = ContentScale.Crop
-                    )
                 }
 
                 AndroidView(
@@ -447,7 +447,11 @@ fun VideoOverlay(
             onClick = { onBackClicked() },
             modifier = Modifier.align(Alignment.TopEnd)
         ) {
-            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+            Icon(
+                painter = painterResource(R.drawable.ic_close),
+                contentDescription = "Close",
+                tint = Color.White
+            )
         }
 
         val formatted = remember(video.timestamp) {
