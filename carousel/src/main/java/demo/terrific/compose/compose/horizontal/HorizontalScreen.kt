@@ -60,7 +60,6 @@ import kotlinx.coroutines.delay
 fun VideoCarousel(
     assets: List<AssetDto>,
     timestampFormat: String?,
-    config: CarouselConfigDto?,
     style: VideoFeatureStyle,
     onVideoClick: (String) -> Unit
 ) {
@@ -210,6 +209,73 @@ fun VideoCard(
     isActive: Boolean,
     onVideoClick: (String) -> Unit,
     textBottomPadding: Dp = 68.dp,
+    style: VideoFeatureStyle
+) {
+    val context = LocalContext.current
+    val videoUrl = video.media?.videoPreviewUrl
+
+    if (!shouldPrepare || videoUrl.isNullOrBlank()) {
+        VideoCardContent(
+            video = video,
+            timestampFormat = timestampFormat,
+            modifier = modifier,
+            player = null,
+            onVideoClick = onVideoClick,
+            textBottomPadding = textBottomPadding,
+            style = style
+        )
+
+        return
+    }
+
+    val player = remember(video.id, videoUrl) {
+        ExoPlayer.Builder(context.applicationContext)
+            .build()
+            .apply {
+                setMediaItem(MediaItem.fromUri(videoUrl))
+                repeatMode = Player.REPEAT_MODE_ONE
+                playWhenReady = false
+                prepare()
+            }
+    }
+
+    LaunchedEffect(player, isActive) {
+        if (isActive) {
+            player.playWhenReady = true
+            player.play()
+        } else {
+            player.playWhenReady = false
+            player.pause()
+        }
+    }
+
+    DisposableEffect(player) {
+        onDispose {
+            player.playWhenReady = false
+            player.stop()
+            player.release()
+        }
+    }
+
+    VideoCardContent(
+        video = video,
+        timestampFormat = timestampFormat,
+        modifier = modifier,
+        player = player,
+        onVideoClick = onVideoClick,
+        textBottomPadding = textBottomPadding,
+        style = style
+    )
+}
+
+@Composable
+private fun VideoCardContent(
+    video: AssetDto,
+    timestampFormat: String?,
+    modifier: Modifier,
+    player: ExoPlayer?,
+    onVideoClick: (String) -> Unit,
+    textBottomPadding: Dp,
     style: VideoFeatureStyle
 ) {
     val context = LocalContext.current
