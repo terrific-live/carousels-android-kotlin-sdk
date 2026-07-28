@@ -1,67 +1,47 @@
 package demo.terrific
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.navigation.NavType
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
-import dagger.hilt.android.AndroidEntryPoint
-import demo.terrific.compose.VerticalScreen
-import demo.terrific.compose.VideoCarousel
-import demo.terrific.ui.theme.TerrificTheme
-import demo.terrific.viewmodel.CarouselViewModel
-import demo.terrific.viewmodel.FeedViewModel
+import demo.terrific.compose.VideoSdk
+import demo.terrific.compose.analytics.VideoSdkAnalyticsListener
+import demo.terrific.compose.compose.common.AssetCarousel
+import demo.terrific.compose.model.analytics.UserEventRequest
 
-@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        enableEdgeToEdge()
         setContent {
-            TerrificTheme {
-                AppRoot()
-            }
+            AppRoot()
         }
     }
 }
 
 @Composable
 fun AppRoot() {
-    val navController = rememberNavController()
 
-    NavHost(
-        navController = navController,
-        startDestination = "carousel"
-    ) {
-        composable("carousel") {
-            val viewModel: CarouselViewModel = hiltViewModel()
-            VideoCarousel(
-                viewModel = viewModel,
-                onVideoClick = { index ->
-                    navController.navigate("feed/$index")
-                }
-            )
+    AssetCarousel(
+        storeId = "1FEyyLAlBJY8000v5nfL",
+        carouselId = "sQsA6UF3MwDfIz4TZXM7"
+    )
+    //
+//    AssetCarousel(
+//        storeId = "X1VVeh6woKnmcYrLeO11",
+//        carouselId = "HsaLDYzu47paYmoCmoOD"
+//    )
+//
+    VideoSdk.setAnalyticsListener(
+        object : VideoSdkAnalyticsListener {
+            override fun onAnalyticsEventTracked(event: UserEventRequest) {
+                Log.d("SDK_ANALYTICS", "Tracked: ${event.name}")
+            }
         }
-
-        composable(
-            route = "feed/{startIndex}",
-            arguments = listOf(
-                navArgument("startIndex") {
-                    type = NavType.IntType
-                }
-            )
-        ) {
-            val viewModel: FeedViewModel = hiltViewModel()
-            VerticalScreen(
-                viewModel = viewModel
-            )
-        }
-    }
+    )
+//
+//    AssetCarousel(
+//        storeId = "0bor4CHMEbm3M4Dluput",
+//        carouselId = "HmUOF0rG4fO1v9U63t7Z"
+//        )
 }

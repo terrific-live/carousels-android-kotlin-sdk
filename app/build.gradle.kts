@@ -6,13 +6,13 @@ plugins {
 }
 
 android {
-    namespace = "demo.terrific"
+    namespace = "terrific.app"
     compileSdk {
         version = release(36)
     }
 
     defaultConfig {
-        applicationId = "demo.terrific"
+        applicationId = "terrific.app"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
@@ -60,6 +60,8 @@ dependencies {
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.navigation)
     implementation(libs.androidx.media3.transformer)
+
+    implementation("live.terrific:carousels-android-kotlin-sdk:1.0.11")
 
     implementation(libs.hilt.android)
     ksp(libs.hilt.compiler)
