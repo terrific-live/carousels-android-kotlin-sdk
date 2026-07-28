@@ -60,6 +60,7 @@ import kotlinx.coroutines.delay
 fun VideoCarousel(
     assets: List<AssetDto>,
     timestampFormat: String?,
+    config: CarouselConfigDto?,
     style: VideoFeatureStyle,
     onVideoClick: (String) -> Unit
 ) {
@@ -92,13 +93,11 @@ fun VideoCarousel(
                         pagerState.currentPage + 1
                     }
 
-                // pagerState.animateScrollToPage(nextPage)
+                 pagerState.animateScrollToPage(nextPage)
             }
         }
     }
-
     BoxWithConstraints(
-        modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
         val pageWidth = maxWidth * 0.6f
@@ -112,7 +111,7 @@ fun VideoCarousel(
             ),
             pageSpacing = 16.dp,
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxSize()
                 .height(style.carouselHeight),
             verticalAlignment = Alignment.CenterVertically,
             beyondViewportPageCount = 1
@@ -278,73 +277,6 @@ private fun VideoCardContent(
     textBottomPadding: Dp,
     style: VideoFeatureStyle
 ) {
-    val context = LocalContext.current
-    val videoUrl = video.media?.videoPreviewUrl
-
-    if (!shouldPrepare || videoUrl.isNullOrBlank()) {
-        VideoCardContent(
-            video = video,
-            timestampFormat = timestampFormat,
-            modifier = modifier,
-            player = null,
-            onVideoClick = onVideoClick,
-            textBottomPadding = textBottomPadding,
-            style = style
-        )
-
-        return
-    }
-
-    val player = remember(video.id, videoUrl) {
-        ExoPlayer.Builder(context.applicationContext)
-            .build()
-            .apply {
-                setMediaItem(MediaItem.fromUri(videoUrl))
-                repeatMode = Player.REPEAT_MODE_ONE
-                playWhenReady = false
-                prepare()
-            }
-    }
-
-    LaunchedEffect(player, isActive) {
-        if (isActive) {
-            player.playWhenReady = true
-            player.play()
-        } else {
-            player.playWhenReady = false
-            player.pause()
-        }
-    }
-
-    DisposableEffect(player) {
-        onDispose {
-            player.playWhenReady = false
-            player.stop()
-            player.release()
-        }
-    }
-
-    VideoCardContent(
-        video = video,
-        timestampFormat = timestampFormat,
-        modifier = modifier,
-        player = player,
-        onVideoClick = onVideoClick,
-        textBottomPadding = textBottomPadding,
-        style = style
-    )
-}
-
-@Composable
-private fun VideoCardContent(
-    video: AssetDto,
-    timestampFormat: String?,
-    modifier: Modifier,
-    player: ExoPlayer?,
-    onVideoClick: (String) -> Unit,
-    textBottomPadding: Dp,
-    style: VideoFeatureStyle
-) {
     Box(
         modifier = modifier
             .aspectRatio(9f / 16f)
@@ -378,10 +310,6 @@ private fun VideoCardContent(
                 modifier = Modifier.fillMaxSize()
             )
         } else {
-            /*
-             * Тут бажано показати preview image,
-             * thumbnail або background asset.
-             */
             video.background?.imageUrl?.let { previewUrl ->
                 AsyncImage(
                     model = previewUrl,
