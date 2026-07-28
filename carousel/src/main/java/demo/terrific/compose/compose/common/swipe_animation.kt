@@ -115,7 +115,7 @@ fun SwipeHintOverlay(
                 SwipeArrow(offsetY = (arrow3Offset - 40).dp)
 
                 Text(
-                    text = "Défilez",
+                    text = "Swipe up",
                     color = Color.White,
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
