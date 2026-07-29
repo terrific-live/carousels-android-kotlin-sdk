@@ -3,6 +3,8 @@
 package demo.terrific.compose.compose.vertical
 
 import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -49,6 +51,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.zIndex
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -570,20 +573,47 @@ fun VideoOverlay(
 
 @Composable
 fun HideSystemBars() {
+    val context = LocalContext.current
+    val activity = remember(context) {
+        context.findActivity()
+    }
 
-    val activity = LocalContext.current as Activity
+    DisposableEffect(activity) {
+        val window = activity?.window
 
-    DisposableEffect(Unit) {
+        if (window != null) {
+            WindowCompat.setDecorFitsSystemWindows(window, false)
 
-        val controller = WindowCompat.getInsetsController(
-            activity.window,
-            activity.window.decorView
-        )
-
-        controller.hide(WindowInsetsCompat.Type.statusBars())
+            WindowInsetsControllerCompat(
+                window,
+                window.decorView
+            ).apply {
+                hide(WindowInsetsCompat.Type.systemBars())
+                systemBarsBehavior =
+                    WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+        }
 
         onDispose {
-            controller.show(WindowInsetsCompat.Type.statusBars())
+            if (window != null) {
+                WindowCompat.setDecorFitsSystemWindows(window, true)
+
+                WindowInsetsControllerCompat(
+                    window,
+                    window.decorView
+                ).show(WindowInsetsCompat.Type.systemBars())
+            }
         }
     }
+}
+
+fun Context.findActivity(): Activity? {
+    var context = this
+
+    while (context is ContextWrapper) {
+        if (context is Activity) return context
+        context = context.baseContext
+    }
+
+    return null
 }
