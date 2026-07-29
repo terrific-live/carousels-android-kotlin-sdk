@@ -41,6 +41,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import demo.terrific.compose.VideoSdk
+import demo.terrific.compose.analytics.TimelineEvent
 import demo.terrific.compose.compose.common.VideoProgressBar
 import demo.terrific.compose.compose.horizontal.toComposeColorOrNull
 import demo.terrific.compose.model.AssetDto
@@ -64,6 +66,17 @@ fun PollScreen(
 ) {
     val hasVoted = selectedOptionText != null
     var progress by remember { mutableFloatStateOf(0f) }
+
+    VideoSdk.analytics.sendEvent(
+        event = TimelineEvent.TimelineAssetViewStartedEvent(
+            assetType = asset.type,
+            parentUrl = "",
+            fixedPosition = 0,
+            position = 0,
+            products = emptyList(),
+            customProducts = emptyList()
+        )
+    )
 
     LaunchedEffect(asset.id) {
         val duration = 3000L // 3 секунди
@@ -132,13 +145,35 @@ fun PollScreen(
                             option = option,
                             options = asset.pollData.options,
                             isSelected = option.text == selectedOptionText,
-                            onClick = { onOptionClick(option.text) },
+                            onClick = {
+                                VideoSdk.analytics.sendEvent(
+                                    TimelineEvent.TimelinePollVotedEvent(
+                                        pollId = asset.id,
+                                        pollAnswer = option.text,
+                                        parentUrl = "",
+                                        questionId = asset.pollData.questionId,
+                                        position = 0
+                                    )
+                                )
+                                onOptionClick(option.text)
+                            },
                             style = style
                         )
                     } else {
                         PollOptionButton(
                             text = option.text,
-                            onClick = { onOptionClick(option.text) },
+                            onClick = {
+                                VideoSdk.analytics.sendEvent(
+                                    TimelineEvent.TimelinePollVotedEvent(
+                                        pollId = asset.id,
+                                        pollAnswer = option.text,
+                                        parentUrl = "",
+                                        questionId = asset.pollData.questionId,
+                                        position = 0
+                                    )
+                                )
+                                onOptionClick(option.text)
+                            },
                             style = style
                         )
                     }
@@ -247,8 +282,7 @@ private fun PollResultOption(
                 .background(
                     if (isSelected) {
                         Color(0xFFB8B8B8)
-                    }
-                    else {
+                    } else {
                         Color(0xFFD7D7D7)
                     }
                 )
@@ -296,28 +330,21 @@ fun PollOverlay(
 
         // CLOSE BUTTON
         IconButton(
-            onClick = { onBackClicked() },
+            onClick = {
+
+                VideoSdk.analytics.sendEvent(
+                    TimelineEvent.TimelineClosedEvent(
+                        parentUrl = "",
+                        totalOpenDurationMs = 0L,
+                        activeViewDurationMs = 0L
+                    )
+                )
+                onBackClicked()
+            },
             modifier = Modifier.align(Alignment.TopEnd)
         ) {
             Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
         }
-
-
-//        val formatted = remember(asset.timestamp) {
-//            asset.timestamp?.toFormatted()
-//        }
-
-        // DATE
-
-//        if (formatted?.isNotEmpty() == true) {
-//            Text(
-//                text = formatted,
-//                modifier = Modifier
-//                    .align(Alignment.TopStart)
-//                    .background(Color.White.copy(alpha = 0.8f))
-//                    .padding(6.dp)
-//            )
-//        }
 
         // RIGHT ACTIONS
         Column(
@@ -326,10 +353,22 @@ fun PollOverlay(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            IconButton(onClick = { onLikeClick(asset.id) }) {
-                Icon(imageVector = if (isLiked) Icons.Default.ThumbUp else Icons.Default.ThumbUpOffAlt,
+            IconButton(onClick = {
+                VideoSdk.analytics.sendEvent(
+                    TimelineEvent.TimelineAssetLikedEvent(
+                        parentUrl = "",
+                        customProducts = emptyList(),
+                        position = 0
+                    )
+                )
+                onLikeClick(asset.id)
+                onLikeClick(asset.id)
+            }) {
+                Icon(
+                    imageVector = if (isLiked) Icons.Default.ThumbUp else Icons.Default.ThumbUpOffAlt,
                     contentDescription = "Like",
-                    tint = if (isLiked) Color.White else Color.White)
+                    tint = if (isLiked) Color.White else Color.White
+                )
             }
 
             Spacer(Modifier.height(12.dp))
@@ -338,6 +377,13 @@ fun PollOverlay(
 
             IconButton(
                 onClick = {
+                    VideoSdk.analytics.sendEvent(
+                        TimelineEvent.TimelineAssetSharedEvent(
+                            parentUrl = "",
+                            customProducts = emptyList(),
+                            position = 0
+                        )
+                    )
                     val intent = Intent(Intent.ACTION_SEND).apply {
                         type = "text/plain"
                         putExtra(Intent.EXTRA_TEXT, asset.media?.mobileUrl)

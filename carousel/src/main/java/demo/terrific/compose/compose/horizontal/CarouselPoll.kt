@@ -26,12 +26,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import demo.terrific.compose.VideoSdk
-import demo.terrific.compose.analytics.AnalyticsEvent
 import demo.terrific.compose.compose.common.DateTimeBadgeCarousel
 import demo.terrific.compose.compose.common.toFormatted
 import demo.terrific.compose.model.AssetDto
-import demo.terrific.compose.model.analytics.AuxData
 import demo.terrific.compose.style.VideoFeatureStyle
 import demo.terrific.compose.style.withSdkFont
 
@@ -76,18 +73,18 @@ fun PollCarouselItem(
                 .then(backgroundModifier)
                 .clickable {
                     onClick(assetId)
-                    VideoSdk.analytics().trackEvent(
-                        event = AnalyticsEvent.TimelineCarouselClicked,
-                        auxData = AuxData(
-//                            assetId = assetId,
-//                            assetIds = emptyList(),
-//                            assetTimestamps = emptyList(),
-                            parentUrl = "",
-//                            totalAssets = 1,
-//                            assetType = "poll",
-
-                        )
-                    )
+//                    VideoSdk.analytics().trackEvent(
+//                        event = AnalyticsEvents.TimelineCarouselClicked,
+//                        auxData = AuxData(
+////                            assetId = assetId,
+////                            assetIds = emptyList(),
+////                            assetTimestamps = emptyList(),
+//                            parentUrl = "",
+////                            totalAssets = 1,
+////                            assetType = "poll",
+//
+//                        )
+//                    )
                 },
             contentAlignment = Alignment.Center
         ) {

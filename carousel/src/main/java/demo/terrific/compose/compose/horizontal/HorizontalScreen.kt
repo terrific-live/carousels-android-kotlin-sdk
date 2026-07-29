@@ -40,13 +40,12 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import demo.terrific.compose.VideoSdk
-import demo.terrific.compose.analytics.AnalyticsEvent
+import demo.terrific.compose.analytics.TimelineEvent
 import demo.terrific.compose.compose.common.DateTimeBadgeCarousel
 import demo.terrific.compose.compose.common.toFormatted
 import demo.terrific.compose.model.AssetDto
 import demo.terrific.compose.model.AssetType
 import demo.terrific.compose.model.CarouselConfigDto
-import demo.terrific.compose.model.analytics.AuxData
 import demo.terrific.compose.style.VideoFeatureStyle
 import demo.terrific.compose.style.withSdkFont
 import kotlinx.coroutines.delay
@@ -76,16 +75,29 @@ fun VideoCarousel(
         }
     }
 
+    VideoSdk.analytics.sendEvent(
+        TimelineEvent.TimelineCarouselLoadedEvent(
+            assetIds = assets.map { it.id },
+            assetTimestamps = assets.map { it.timestamp.toString() },
+            parentUrl = "",
+            totalAssets = assets.size,
+            position = 0
+        )
+    )
+
+    VideoSdk.analytics.sendEvent(
+        TimelineEvent.TimelineCarouselViewedEvent(
+            assetIds = assets.map { it.id },
+            assetTimestamps = assets.map { it.timestamp.toString() },
+            parentUrl = "",
+            totalAssets = assets.size,
+            position = 0
+        )
+    )
+
     LaunchedEffect(pagerState.currentPage, players) {
         players.forEachIndexed { index, player ->
             player.playWhenReady = index == pagerState.currentPage
-//            VideoSdk.analytics().trackTimelineAssetViewStarted(
-//                assetType = "video",
-//                position = 0,
-//                fixedPosition = 0,
-//                emptyList(),
-//                emptyList()
-//            )
         }
     }
 
@@ -231,17 +243,35 @@ fun VideoCard(
             .background(Color.Black)
             .clickable {
                 onVideoClick(video.id)
-                VideoSdk.analytics().trackEvent(
-                    event = AnalyticsEvent.TimelineCarouselClicked,
-                    auxData = AuxData(
+
+                VideoSdk.analytics.sendEvent(
+                    TimelineEvent.TimelineOpenedEvent(
+                        parentUrl = ""
+                    )
+                )
+
+//                VideoSdk.analytics().trackEvent(
+//                    event = AnalyticsEvents.TimelineCarouselClicked,
+//                    auxData = AuxData(
 //                        assetType = "video",
 //                        assetId = video.id,
 //                        assetIds = emptyList(),
 //                        assetTimestamps = emptyList(),
-                        parentUrl = "",
+//                        parentUrl = "",
 //                        totalAssets = 1
-                    )
-                )
+//                    )
+//                )
+//                VideoSdk.analytics.sendEvent(
+//                    TimelineEvent.CarouselClicked(
+//                        assetId = video.id,
+//                        assetIds = listOf(video.id),
+//                        assetTimestamps = listOf(video.timestamp ?: ""),
+//                        totalAssets = 3,
+//                        parentUrl = "",
+//                        externalUserId = "",
+//                        position = 0
+//                    )
+//                )
             }
     ) {
         AndroidView(

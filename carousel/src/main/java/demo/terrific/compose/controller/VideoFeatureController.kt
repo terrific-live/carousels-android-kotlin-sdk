@@ -1,12 +1,11 @@
 package demo.terrific.compose.controller
 
 import demo.terrific.compose.VideoSdk
-import demo.terrific.compose.analytics.AnalyticsEvent
+import demo.terrific.compose.analytics.TimelineEvent
 import demo.terrific.compose.compose.common.VideoScreen
 import demo.terrific.compose.model.AssetDto
 import demo.terrific.compose.model.CarouselConfigDto
 import demo.terrific.compose.model.PollOptionDto
-import demo.terrific.compose.model.analytics.AuxData
 import demo.terrific.compose.repository.VideoRepository
 import demo.terrific.compose.storage.likes.LikesStorage
 import demo.terrific.compose.storage.storage.PollStorage
@@ -102,18 +101,18 @@ internal class VideoFeatureController(
                     )
                 }
 
-                VideoSdk.analytics().trackEvent(
-                    AnalyticsEvent.TimelineCarouselLoaded,
-                    AuxData(
-//                        assetId = 0.toString(),
-//                        assetIds = emptyList(),
-//                        assetTimestamps = emptyList(),
-                        parentUrl = "",
-//                        totalAssets = 1,
-//                        assetType = "image",
-
-                    )
-                )
+//                VideoSdk.analytics().trackEvent(
+//                    AnalyticsEvents.TimelineCarouselLoaded,
+//                    AuxData(
+////                        assetId = 0.toString(),
+////                        assetIds = emptyList(),
+////                        assetTimestamps = emptyList(),
+//                        parentUrl = "",
+////                        totalAssets = 1,
+////                        assetType = "image",
+//
+//                    )
+//                )
             }.onFailure { throwable ->
                 _state.update {
                     it.copy(
@@ -151,45 +150,20 @@ internal class VideoFeatureController(
                 selectedId = id
             )
         }
+        VideoSdk.analytics.sendEvent(TimelineEvent.TimelineCarouselClickedEvent(
+            assetId = id,
+            assetIds = emptyList(),
+            assetTimestamps = emptyList(),
+            parentUrl = "",
+            totalAssets = 10, //fix
+            position = 0
+        ))
     }
 
     fun onBack() {
         _state.update { it.copy(screen = VideoScreen.Carousel) }
     }
 
-    fun onPollOptionClick(questionId: String, optionText: String) {
-        val updatedAssets = _state.value.assets.map { asset ->
-            val pollData = asset.pollData
-            if (pollData?.questionId == questionId) {
-                val updatedOptions = pollData.options.map { option ->
-                    if (option.text == optionText) {
-                        option.copy(numberOfVotes = option.numberOfVotes + 1)
-                    } else {
-                        option
-                    }
-                }
-
-                pollStorage.savePollState(
-                    questionId = questionId,
-                    selectedOptionText = optionText,
-                    options = updatedOptions
-                )
-
-                asset.copy(
-                    pollData = pollData.copy(options = updatedOptions)
-                )
-            } else {
-                asset
-            }
-        }
-
-        _state.update {
-            it.copy(
-                assets = updatedAssets,
-                selectedPollAnswers = it.selectedPollAnswers + (questionId to optionText)
-            )
-        }
-    }
     fun onPollOptionClick(
         assetId: String,
         questionId: String,

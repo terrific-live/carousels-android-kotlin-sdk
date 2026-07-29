@@ -4,6 +4,7 @@ package demo.terrific.compose.compose.vertical
 
 import android.app.Activity
 import android.content.Intent
+import androidx.annotation.OptIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,10 +31,13 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -60,7 +64,7 @@ import androidx.media3.ui.PlayerView
 import coil.compose.AsyncImage
 import demo.terrific.R
 import demo.terrific.compose.VideoSdk
-import demo.terrific.compose.analytics.AnalyticsEvent
+import demo.terrific.compose.analytics.TimelineEvent
 import demo.terrific.compose.compose.common.DateTimeBadge
 import demo.terrific.compose.compose.common.SwipeHintOverlay
 import demo.terrific.compose.compose.common.VideoProgressBar
@@ -69,10 +73,10 @@ import demo.terrific.compose.compose.horizontal.toComposeColorOrNull
 import demo.terrific.compose.model.AssetDto
 import demo.terrific.compose.model.AssetType
 import demo.terrific.compose.model.SponsorshipDto
-import demo.terrific.compose.model.analytics.AuxData
 import demo.terrific.compose.style.VideoFeatureStyle
 import demo.terrific.compose.style.withSdkFont
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Composable
 fun VerticalScreen(
@@ -103,6 +107,45 @@ fun VerticalScreen(
         mutableStateOf(false)
     }
 
+    var activeAssetIndex by remember {
+        mutableIntStateOf(pagerState.settledPage)
+    }
+
+    var assetViewStartedAt by remember {
+        mutableLongStateOf(System.currentTimeMillis())
+    }
+
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.settledPage }
+            .distinctUntilChanged()
+            .collect { newPage ->
+
+                val previousPage = activeAssetIndex
+
+                if (newPage == previousPage) {
+                    return@collect
+                }
+
+                val previousAsset = assets.getOrNull(previousPage)
+                val now = System.currentTimeMillis()
+
+                previousAsset?.let { asset ->
+                    VideoSdk.analytics.sendEvent(
+                        TimelineEvent.TimelineAssetViewEndedEvent(
+                            assetType = asset.type,
+                            parentUrl = "",
+                            netoAssetWatchTimeMs = now - assetViewStartedAt,
+                            viewDurationMs = now - assetViewStartedAt,
+                            position = previousPage,
+                            products = listOf()
+                        )
+                    )
+                }
+
+                activeAssetIndex = newPage
+                assetViewStartedAt = now
+            }
+    }
 
 
     VerticalPager(
@@ -112,15 +155,9 @@ fun VerticalScreen(
         val asset = assets[page]
 
         LaunchedEffect(pagerState) {
-            VideoSdk.analytics().trackEvent(
-                AnalyticsEvent.TimelineOpened,
-                AuxData(
-//                    assetType = "image",
-//                    assetId = asset.id,
-//                    assetIds = emptyList(),
-//                    assetTimestamps = emptyList(),
-                    parentUrl = "",
-//                    totalAssets = 1
+            VideoSdk.analytics.sendEvent(
+                event = TimelineEvent.TimelineOpenedEvent(
+                    parentUrl = ""
                 )
             )
         }
@@ -217,7 +254,7 @@ private fun VerticalScreenPage(
     }
 }
 
-@androidx.annotation.OptIn(UnstableApi::class)
+@OptIn(UnstableApi::class)
 @Composable
 fun FullscreenVideoPlayer(
     video: AssetDto,
@@ -244,6 +281,17 @@ fun FullscreenVideoPlayer(
             repeatMode = Player.REPEAT_MODE_ONE
         }
     }
+
+    VideoSdk.analytics.sendEvent(
+        event = TimelineEvent.TimelineAssetViewStartedEvent(
+            assetType = video.type,
+            parentUrl = "",
+            fixedPosition = 0,
+            position = 0,
+            products = emptyList(),
+            customProducts = emptyList()
+        )
+    )
 
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -434,7 +482,17 @@ fun VideoOverlay(
 
         // CLOSE BUTTON
         IconButton(
-            onClick = { onBackClicked() },
+            onClick = {
+
+                VideoSdk.analytics.sendEvent(
+                    TimelineEvent.TimelineClosedEvent(
+                        parentUrl = "",
+                        totalOpenDurationMs = 0L,
+                        activeViewDurationMs = 0L
+                    )
+                )
+                onBackClicked()
+            },
             modifier = Modifier.align(Alignment.TopEnd)
         ) {
             Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
@@ -468,7 +526,16 @@ fun VideoOverlay(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            IconButton(onClick = { onLikeClick(video.id) }) {
+            IconButton(onClick = {
+                VideoSdk.analytics.sendEvent(
+                    TimelineEvent.TimelineAssetLikedEvent(
+                        parentUrl = "",
+                        customProducts = emptyList(),
+                        position = 0
+                    )
+                )
+                onLikeClick(video.id)
+            }) {
                 Icon(
                     imageVector = if (isLiked) {
                         Icons.Filled.ThumbUp
@@ -486,6 +553,13 @@ fun VideoOverlay(
 
             IconButton(
                 onClick = {
+                    VideoSdk.analytics.sendEvent(
+                        TimelineEvent.TimelineAssetSharedEvent(
+                            parentUrl = "",
+                            customProducts = emptyList(),
+                            position = 0
+                        )
+                    )
                     val intent = Intent(Intent.ACTION_SEND).apply {
                         type = "text/plain"
                         putExtra(Intent.EXTRA_TEXT, video.media?.mobileUrl)

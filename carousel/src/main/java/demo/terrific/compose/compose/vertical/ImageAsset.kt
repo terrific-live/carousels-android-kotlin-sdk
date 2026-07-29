@@ -38,6 +38,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
 import demo.terrific.R
+import demo.terrific.compose.VideoSdk
+import demo.terrific.compose.analytics.TimelineEvent
 import demo.terrific.compose.compose.common.DateTimeBadge
 import demo.terrific.compose.compose.common.VideoProgressBar
 import demo.terrific.compose.compose.common.toFormatted
@@ -73,6 +75,16 @@ fun ImageAsset(
         }
     }
 
+    VideoSdk.analytics.sendEvent(
+        event = TimelineEvent.TimelineAssetViewStartedEvent(
+            assetType = asset.type,
+            parentUrl = "",
+            fixedPosition = 0,
+            position = 0,
+            products = emptyList(),
+            customProducts = emptyList()
+        )
+    )
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -170,7 +182,17 @@ fun ImageOverlay(
 
         // CLOSE BUTTON
         IconButton(
-            onClick = { onBackClicked() },
+            onClick = {
+
+                VideoSdk.analytics.sendEvent(
+                    TimelineEvent.TimelineClosedEvent(
+                        parentUrl = "",
+                        totalOpenDurationMs = 0L,
+                        activeViewDurationMs = 0L
+                    )
+                )
+                onBackClicked()
+            },
             modifier = Modifier.align(Alignment.TopEnd)
         ) {
             Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
@@ -190,8 +212,16 @@ fun ImageOverlay(
                 .align(Alignment.BottomEnd),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
-            IconButton(onClick = { onLikeClick(asset.id) }) {
+            IconButton(onClick = {
+                VideoSdk.analytics.sendEvent(
+                    TimelineEvent.TimelineAssetLikedEvent(
+                        parentUrl = "",
+                        customProducts = emptyList(),
+                        position = 0
+                    )
+                )
+                onLikeClick(asset.id)
+            }) {
                 Icon(
                     imageVector = if (isLiked) {
                         Icons.Filled.ThumbUp
@@ -209,6 +239,13 @@ fun ImageOverlay(
 
             IconButton(
                 onClick = {
+                    VideoSdk.analytics.sendEvent(
+                        TimelineEvent.TimelineAssetSharedEvent(
+                            parentUrl = "",
+                            customProducts = emptyList(),
+                            position = 0
+                        )
+                    )
                     val intent = Intent(Intent.ACTION_SEND).apply {
                         type = "text/plain"
                         putExtra(Intent.EXTRA_TEXT, asset.media?.mobileUrl)

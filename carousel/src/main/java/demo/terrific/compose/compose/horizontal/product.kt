@@ -34,6 +34,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import coil.compose.AsyncImage
+import demo.terrific.compose.VideoSdk
+import demo.terrific.compose.analytics.TimelineEvent
 import demo.terrific.compose.model.ProductDto
 import demo.terrific.compose.style.VideoFeatureStyle
 import demo.terrific.compose.style.withSdkFont
@@ -118,6 +120,12 @@ fun TimelineProductCard(
         shape = RoundedCornerShape(22.dp),
         color = backgroundColor,
         onClick = {
+            VideoSdk.analytics.sendEvent(TimelineEvent.TimelineProductClickedEvent(
+                itemViewSource = "video",
+                product = product.name,
+                parentUrl = "",
+                items = emptyList()
+            ))
             val intent = Intent(Intent.ACTION_VIEW, product.externalUrl?.toUri())
             context.startActivity(intent)
         }
