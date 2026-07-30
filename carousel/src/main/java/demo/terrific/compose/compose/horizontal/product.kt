@@ -1,7 +1,6 @@
 package demo.terrific.compose.compose.horizontal
 
 import android.annotation.SuppressLint
-import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.snapping.SnapPosition
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
@@ -32,8 +31,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import coil.compose.AsyncImage
+import demo.terrific.compose.model.AssetDto
 import demo.terrific.compose.model.ProductDto
 import demo.terrific.compose.style.VideoFeatureStyle
 import demo.terrific.compose.style.withSdkFont
@@ -43,7 +42,9 @@ import demo.terrific.compose.style.withSdkFont
 fun TimelineProductsRowCarousel(
     products: List<ProductDto>,
     modifier: Modifier = Modifier,
-    style: VideoFeatureStyle
+    style: VideoFeatureStyle,
+    onProductClicked: (String) -> Unit,
+    asset: AssetDto
 ) {
 
     val listState = rememberLazyListState()
@@ -94,7 +95,9 @@ fun TimelineProductsRowCarousel(
             TimelineProductCard(
                 product = product,
                 modifier = Modifier.fillParentMaxWidth(1f),
-                style = style
+                style = style,
+                onProductClicked = onProductClicked,
+                asset = asset
             )
         }
     }
@@ -104,9 +107,10 @@ fun TimelineProductsRowCarousel(
 fun TimelineProductCard(
     product: ProductDto,
     modifier: Modifier = Modifier,
-    style: VideoFeatureStyle
+    style: VideoFeatureStyle,
+    onProductClicked: (String) -> Unit,
+    asset: AssetDto
 ) {
-    val context = LocalContext.current
 
     val backgroundColor = product.background?.color?.toComposeColorOrNull() ?: Color(0xFF4A4A4A)
     val textColor = product.background?.textColor?.toComposeColorOrNull() ?: Color.White
@@ -118,8 +122,7 @@ fun TimelineProductCard(
         shape = RoundedCornerShape(22.dp),
         color = backgroundColor,
         onClick = {
-            val intent = Intent(Intent.ACTION_VIEW, product.externalUrl?.toUri())
-            context.startActivity(intent)
+            onProductClicked(asset.id)
         }
     ) {
         Row(

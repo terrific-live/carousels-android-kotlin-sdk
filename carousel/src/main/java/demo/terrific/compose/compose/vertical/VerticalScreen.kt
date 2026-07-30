@@ -6,6 +6,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -352,53 +353,104 @@ fun FullscreenVideoPlayer(
                     }
                 }
 
-                AndroidView(
-                    factory = {
-                        PlayerView(it).apply {
-                            this.player = player
-                            useController = false
-                            resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-                        }
-                    },
-                    modifier = if (video.background != null) {
-                        Modifier
-                            .fillMaxSize()
-                            .padding(16.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                    } else {
-                        Modifier
-                            .fillMaxSize()
-                    }
-                )
 
-                VideoOverlay(
-                    video = video,
-                    timestampFormat = timestampFormat,
-                    isLiked = isLiked,
-                    onLikeClick = onLikeClick,
-                    onBackClicked = onBackClicked,
-                    player = player,
-                    sponsorship = sponsorship,
-                    style = style
-                )
+                val sponsorshipBanner = sponsorship
+                    ?.takeIf { it.enabled && it.adPlacementType == "banner" }
+                    ?.banner
 
-                VideoProgressBar(
-                    progress = progress,
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .padding(start = 24.dp, top = 0.dp, end = 24.dp, bottom = 32.dp),
-                    height = 8.dp,
-                    trackColor = Color.White.copy(alpha = 0.28f),
-                    progressColor = Color.White
-                )
+                val bannerPosition = sponsorshipBanner?.position?.lowercase()
 
-                if (showSwipeHint) {
-                    SwipeHintOverlay(
-                        modifier = Modifier.align(Alignment.Center),
-                        onFinished = onSwipeHintFinished
+                val showTopSponsorBanner =
+                    sponsorshipBanner != null &&
+                            (bannerPosition == "top" || bannerPosition == "top-bottom")
+
+                val showBottomSponsorBanner =
+                    sponsorshipBanner != null &&
+                            (bannerPosition == "bottom" || bannerPosition == "top-bottom")
+
+
+                val videoContainerModifier = if (video.background != null) {
+                    Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                } else {
+                    Modifier.fillMaxSize()
+                }
+
+                Box(
+                    modifier = videoContainerModifier
+                ) {
+                    AndroidView(
+                        factory = {
+                            PlayerView(it).apply {
+                                this.player = player
+                                useController = false
+                                resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL
+                            }
+                        },
+                        update = {
+                            it.player = player
+                        },
+                        modifier = Modifier.fillMaxSize()
                     )
 
+                    if (showTopSponsorBanner) {
+                        SponsorshipBanner(
+                            banner = sponsorshipBanner!!,
+                            modifier = Modifier.align(Alignment.TopCenter),
+                            onClick = { url ->
+                                openUrl(context, url)
+                            }
+                        )
+                    }
+
+                    if (showBottomSponsorBanner) {
+                        SponsorshipBanner(
+                            banner = sponsorshipBanner!!,
+                            modifier = Modifier.align(Alignment.BottomCenter),
+                            onClick = { url ->
+                                openUrl(context, url)
+                            }
+                        )
+                    }
+
+                    VideoOverlay(
+                        video = video,
+                        timestampFormat = timestampFormat,
+                        isLiked = isLiked,
+                        onLikeClick = onLikeClick,
+                        onBackClicked = onBackClicked,
+                        player = player,
+                        sponsorship = sponsorship,
+                        style = style
+                    )
+
+                    VideoProgressBar(
+                        progress = progress,
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .padding(
+                                start = 24.dp,
+                                end = 24.dp,
+                                bottom = if (showBottomSponsorBanner) {
+                                    48.dp
+                                } else {
+                                    0.dp
+                                }
+                            ),
+                        height = 8.dp,
+                        trackColor = Color.White.copy(alpha = 0.28f),
+                        progressColor = Color.White
+                    )
+
+                    if (showSwipeHint) {
+                        SwipeHintOverlay(
+                            modifier = Modifier.align(Alignment.Center),
+                            onFinished = onSwipeHintFinished
+                        )
+                    }
                 }
             }
 
@@ -414,7 +466,7 @@ fun FullscreenVideoPlayer(
                                 )
                             )
                         )
-                        .padding(horizontal = 12.dp, vertical = 12.dp)
+                        .padding(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 16.dp)
                 ) {
                     TimelineProductsRow(
                         products = products,
@@ -616,4 +668,18 @@ fun Context.findActivity(): Activity? {
     }
 
     return null
+}
+
+private fun openUrl(
+    context: Context,
+    url: String
+) {
+    runCatching {
+        context.startActivity(
+            Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse(url)
+            ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        )
+    }
 }
