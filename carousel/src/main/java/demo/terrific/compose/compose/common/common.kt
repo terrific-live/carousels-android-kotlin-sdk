@@ -79,9 +79,9 @@ fun DateTimeBadge(
 ) {
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(Color(0xFFF4F4F4))
-            .padding(horizontal = 18.dp, vertical = 12.dp)
+            .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         Text(
             text = text,
@@ -99,7 +99,7 @@ fun DateTimeBadgeCarousel(
 ) {
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(Color(0xFFF4F4F4))
             .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {

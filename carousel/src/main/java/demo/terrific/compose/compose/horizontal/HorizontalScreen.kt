@@ -190,8 +190,10 @@ fun VideoCarousel(
 
                     TimelineProductsRowCarousel(
                         products = asset.products,
+                        asset = asset,
                         modifier = Modifier.fillMaxWidth(),
-                        style = style
+                        style = style,
+                        onProductClicked = onVideoClick
                     )
                 }
             }

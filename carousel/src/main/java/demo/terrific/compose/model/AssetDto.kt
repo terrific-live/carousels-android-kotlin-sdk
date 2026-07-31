@@ -69,8 +69,11 @@ data class AssetDto(
 data class SponsorshipBannerDto(
     val imageUrl: String? = null,
     val clickRedirect: String? = null,
-    val backgroundColor: String? = null
+    val backgroundColor: String? = null,
+    val logoUrl: String?,
+    val position: String?
 )
+
 @Serializable
 data class BackgroundDto(
     val color: ColorDto? = null,
