@@ -17,6 +17,10 @@ data class VideoFeatureStyle(
     val productHeightFraction: Float = 0.16f,
     val fontFamily: FontFamily = DefaultSdkFontFamily,
 
+    val mainTitleTextStyle: TextStyle = TextStyle(
+        fontSize = 28.sp
+    ),
+
     val titleTextStyle: TextStyle = TextStyle(
         fontSize = 20.sp
     ),

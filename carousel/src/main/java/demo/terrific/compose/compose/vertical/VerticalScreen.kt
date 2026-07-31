@@ -601,7 +601,7 @@ fun VideoOverlay(
                     lineHeight = 24.sp,
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
-                    style = style.titleTextStyle.withSdkFont(style.fontFamily)
+                    style = style.mainTitleTextStyle.withSdkFont(style.fontFamily)
                 )
             }
 
