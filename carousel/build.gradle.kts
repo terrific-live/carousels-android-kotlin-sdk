@@ -77,7 +77,7 @@ mavenPublishing {
     coordinates(
         groupId = "live.terrific",
         artifactId = "carousels-android-kotlin-sdk",
-        version = "1.0.12"
+        version = "1.0.13"
     )
 
     pom {

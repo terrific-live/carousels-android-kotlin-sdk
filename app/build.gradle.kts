@@ -56,8 +56,9 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
 
-    implementation(project(":carousel"))
-//    implementation("io.github.terrific-live:carousels-android-kotlin-sdk:1.0.6")
+//    implementation(project(":carousel"))
+
+    implementation("live.terrific:carousels-android-kotlin-sdk:1.0.12")
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
