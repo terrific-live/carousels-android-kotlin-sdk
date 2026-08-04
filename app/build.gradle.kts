@@ -23,7 +23,7 @@ android {
 
     buildTypes {
         debug {
-            isDebuggable = true
+            isDebuggable = false
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -56,9 +56,8 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
 
-//    implementation(project(":carousel"))
-
-    implementation("live.terrific:carousels-android-kotlin-sdk:1.0.12")
+    implementation(project(":carousel"))
+//    implementation("live.terrific:carousels-android-kotlin-sdk:1.0.13")
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)

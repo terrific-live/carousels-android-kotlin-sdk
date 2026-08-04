@@ -670,7 +670,7 @@ fun Context.findActivity(): Activity? {
     return null
 }
 
-private fun openUrl(
+fun openUrl(
     context: Context,
     url: String
 ) {

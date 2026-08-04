@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.PageSize
 import androidx.compose.foundation.pager.rememberPagerState
@@ -47,6 +48,7 @@ import demo.terrific.compose.VideoSdk
 import demo.terrific.compose.analytics.AnalyticsEvent
 import demo.terrific.compose.compose.common.DateTimeBadgeCarousel
 import demo.terrific.compose.compose.common.toFormatted
+import demo.terrific.compose.compose.vertical.openUrl
 import demo.terrific.compose.model.AssetDto
 import demo.terrific.compose.model.AssetType
 import demo.terrific.compose.model.CarouselConfigDto
@@ -64,6 +66,7 @@ fun VideoCarousel(
     style: VideoFeatureStyle,
     onVideoClick: (String) -> Unit
 ) {
+    val context = LocalContext.current
     val pagerState = rememberPagerState(
         pageCount = { assets.size }
     )
@@ -97,107 +100,155 @@ fun VideoCarousel(
             }
         }
     }
-    BoxWithConstraints(
-        contentAlignment = Alignment.Center
-    ) {
-        val pageWidth = maxWidth * 0.6f
-        val horizontalPadding = (maxWidth - pageWidth) / 2
+    Column() {
 
-        HorizontalPager(
-            state = pagerState,
-            pageSize = PageSize.Fixed(pageWidth),
-            contentPadding = PaddingValues(
-                horizontal = horizontalPadding
-            ),
-            pageSpacing = 16.dp,
-            modifier = Modifier
-                .fillMaxSize()
-                .height(style.carouselHeight),
-            verticalAlignment = Alignment.CenterVertically,
-            beyondViewportPageCount = 1
-        ) { page ->
-            val asset = assets[page]
-            val hasProducts = asset.products?.isNotEmpty() == true
+        config?.sponsorship?.takeIf { it.enabled }?.let {
+            SponsorshipHeader(it)
+        }
 
-            val shouldPrepareVideo =
-                asset.type == AssetType.VIDEO.type &&
-                        kotlin.math.abs(page - pagerState.currentPage) <= 1
+        BoxWithConstraints(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
+        ) {
+            val carouselHeight = style.carouselHeight
+            val productHeight = style.productHeight
+            val productSpacing = style.productSpacing
 
+            val maxAssetWidth = carouselHeight * 9f / 16f
 
-            val isCurrentPage =
-                page == pagerState.currentPage &&
-                        !pagerState.isScrollInProgress
+            val pageWidth = minOf(
+                maxAssetWidth,
+                maxWidth * 0.8f
+            )
 
-            Column(
+            val horizontalPadding = (maxWidth - pageWidth) / 2
+
+            HorizontalPager(
+                state = pagerState,
+                pageSize = PageSize.Fixed(pageWidth),
+                contentPadding = PaddingValues(
+                    horizontal = horizontalPadding
+                ),
+                pageSpacing = 16.dp,
                 modifier = Modifier
-                    .height(style.carouselHeight)
-                    .fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .aspectRatio(9f / 16f)
-                        .clip(
-                            RoundedCornerShape(
-                                style.cornerRadius
-                            )
-                        )
-                ) {
-                    when (asset.type) {
-                        AssetType.POLL.type -> {
-                            PollCarouselItem(
-                                asset = asset,
-                                timestampFormat = timestampFormat,
-                                assetId = asset.id,
-                                onClick = onVideoClick,
-                                modifier = Modifier.fillMaxSize(),
-                                style = style
-                            )
-                        }
+                    .fillMaxWidth()
+                    .height(carouselHeight),
+                verticalAlignment = Alignment.CenterVertically,
+                beyondViewportPageCount = 1
+            ) { page ->
 
-                        AssetType.VIDEO.type -> {
-                            VideoCard(
-                                video = asset,
-                                timestampFormat = timestampFormat,
-                                shouldPrepare = shouldPrepareVideo,
-                                isActive = isCurrentPage,
-                                onVideoClick = onVideoClick,
-                                textBottomPadding =
-                                    if (hasProducts) 68.dp else 20.dp,
-                                style = style
-                            )
-                        }
+                val asset = assets[page]
+                val hasProducts = asset.products?.isNotEmpty() == true
 
-                        AssetType.IMAGE.type -> {
-                            CarouselImage(
-                                asset = asset,
-                                timestampFormat = timestampFormat,
-                                onVideoClick = onVideoClick,
-                                style = style
-                            )
-                        }
-                    }
+                val requestedAssetHeight = if (hasProducts) {
+                    carouselHeight - productHeight - productSpacing
+                } else {
+                    carouselHeight
                 }
 
-                if (hasProducts) {
-                    Spacer(
-                        modifier = Modifier.height(
-                            style.productSpacing
-                        )
-                    )
+                val requestedAssetWidth = requestedAssetHeight * 9f / 16f
 
-                    TimelineProductsRowCarousel(
-                        products = asset.products,
-                        asset = asset,
-                        modifier = Modifier.fillMaxWidth(),
-                        style = style,
-                        onProductClicked = onVideoClick
-                    )
+                val assetWidth = minOf(
+                    requestedAssetWidth,
+                    pageWidth
+                )
+
+                val assetHeight = assetWidth * 16f / 9f
+
+                val shouldPrepareVideo =
+                    asset.type == AssetType.VIDEO.type &&
+                            kotlin.math.abs(page - pagerState.currentPage) <= 1
+
+                val isCurrentPage =
+                    page == pagerState.currentPage &&
+                            !pagerState.isScrollInProgress
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(carouselHeight),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Top
+                ) {
+
+                    Box(
+                        modifier = Modifier
+                            .width(assetWidth)
+                            .height(assetHeight)
+                            .clip(
+                                RoundedCornerShape(style.cornerRadius)
+                            )
+                    ) {
+                        when (asset.type) {
+                            AssetType.POLL.type -> {
+                                PollCarouselItem(
+                                    asset = asset,
+                                    timestampFormat = timestampFormat,
+                                    assetId = asset.id,
+                                    onClick = onVideoClick,
+                                    modifier = Modifier.fillMaxSize(),
+                                    style = style
+                                )
+                            }
+
+                            AssetType.VIDEO.type -> {
+                                VideoCard(
+                                    video = asset,
+                                    timestampFormat = timestampFormat,
+                                    shouldPrepare = shouldPrepareVideo,
+                                    isActive = isCurrentPage,
+                                    onVideoClick = onVideoClick,
+                                    textBottomPadding =
+                                        if (hasProducts) 68.dp else 20.dp,
+                                    style = style
+                                )
+                            }
+
+                            AssetType.IMAGE.type -> {
+                                CarouselImage(
+                                    asset = asset,
+                                    timestampFormat = timestampFormat,
+                                    onVideoClick = onVideoClick,
+                                    style = style
+                                )
+                            }
+                        }
+                    }
+
+                    if (hasProducts) {
+                        Spacer(
+                            modifier = Modifier.height(productSpacing)
+                        )
+
+
+                        TimelineProductsRowCarousel(
+                            products = asset.products,
+                            asset = asset,
+                            modifier = Modifier
+                                .fillMaxWidth()/*
+                            .height(productHeight)*/,
+                            style = style,
+                            onProductClicked = onVideoClick
+                        )
+                    }
+
                 }
             }
         }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        config?.sponsorship?.takeIf {
+            it.enabled &&
+                    it.adPlacementType == "banner" &&
+                    it.banner?.isBottom == true
+        }?.let {
+            HorizontalSponsorshipBanner(it,
+                onClick = { url ->
+                openUrl(context, url)
+            })
+        }
+
     }
 }
 
