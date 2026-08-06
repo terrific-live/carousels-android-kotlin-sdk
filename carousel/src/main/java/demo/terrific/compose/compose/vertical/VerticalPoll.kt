@@ -102,28 +102,27 @@ fun PollScreen(
             .fillMaxSize()
             .then(backgroundModifier)
     ) {
-
         asset.background?.let {
             AsyncImage(
-                model = asset.background?.imageUrl,
+                model = asset.background.imageUrl,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
             )
         }
 
-        sponsorship?.badge?.let {
-            SponsorshipBadge(
-                title = it.title,
-                logoUrl = it.logoUrl,
-                backgroundColor = sponsorship.badge.backgroundColor?.toComposeColorOrNull()
-                    ?: Color(0xFFF96544),
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 8.dp)
-                    .zIndex(10f)
-            )
-        }
+//        sponsorship?.badge?.let {
+//            SponsorshipBadge(
+//                title = it.title,
+//                logoUrl = it.logoUrl,
+//                backgroundColor = sponsorship.badge.backgroundColor?.toComposeColorOrNull()
+//                    ?: Color(0xFFF96544),
+//                modifier = Modifier
+//                    .align(Alignment.TopCenter)
+//                    .padding(top = 8.dp)
+//                    .zIndex(10f)
+//            )
+//        }
 
         Column(
             modifier = Modifier
@@ -168,17 +167,6 @@ fun PollScreen(
             }
         }
 
-//        LinearProgressIndicator(
-//            progress = { progress },
-//            color = Color.Blue,
-//            modifier = Modifier
-//                .align(Alignment.BottomCenter)
-//                .fillMaxWidth()
-//                .padding(horizontal = 16.dp, vertical = 32.dp)
-//                .height(4.dp),
-//        )
-
-
         VideoProgressBar(
             progress = progress,
             modifier = Modifier
@@ -197,6 +185,15 @@ fun PollScreen(
             onBackClicked = onBackClicked,
             style = style
         )
+
+        sponsorship?.let {
+            PollSponsorLogo(
+                sponsorship = it,
+                modifier = Modifier.align(Alignment.BottomCenter)
+                    .padding(bottom = 68.dp),
+                onClick = {}
+            )
+        }
     }
 }
 
@@ -216,14 +213,15 @@ private fun PollOptionButton(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(82.dp)
                 .padding(horizontal = 22.dp),
             contentAlignment = Alignment.CenterStart
         ) {
             Text(
                 text = text,
                 color = Color(0xFF1C1C1C),
-                style = style.subtitleTextStyle.withSdkFont(style.fontFamily)
+                style = style.subtitleTextStyle.withSdkFont(style.fontFamily),
+                modifier = Modifier
+                    .padding(vertical = 12.dp)
             )
         }
     }
@@ -311,7 +309,7 @@ fun PollOverlay(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(start = 32.dp, end = 32.dp, top = 32.dp, bottom = 48.dp)
+            .padding(start = 32.dp, end = 16.dp, top = 32.dp, bottom = 72.dp)
             .zIndex(1f)
     ) {
 

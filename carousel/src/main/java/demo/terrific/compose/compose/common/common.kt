@@ -86,7 +86,7 @@ fun DateTimeBadge(
         Text(
             text = text,
             color = Color(0xFF111111),
-            fontSize = 18.sp,
+            fontSize = 14.sp,
             fontWeight = FontWeight.Bold
         )
     }

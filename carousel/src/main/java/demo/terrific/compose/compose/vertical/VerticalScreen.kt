@@ -2,19 +2,20 @@
 
 package demo.terrific.compose.compose.vertical
 
-import android.app.Activity
 import android.content.Context
-import android.content.ContextWrapper
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -50,9 +51,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.zIndex
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -90,7 +88,6 @@ fun VerticalScreen(
     sponsorship: SponsorshipDto?,
     style: VideoFeatureStyle
 ) {
-    HideSystemBars()
 
     val startIndex = remember(assets, videoId) {
         assets.indexOfFirst { it.id == videoId }.takeIf { it >= 0 } ?: 0
@@ -117,7 +114,9 @@ fun VerticalScreen(
 
     VerticalPager(
         state = pagerState,
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .fillMaxSize()
+            .windowInsetsPadding(WindowInsets.systemBars)
     ) { page ->
         val asset = assets[page]
 
@@ -397,7 +396,7 @@ fun FullscreenVideoPlayer(
 
                     if (showTopSponsorBanner) {
                         SponsorshipBanner(
-                            banner = sponsorshipBanner!!,
+                            banner = sponsorshipBanner,
                             modifier = Modifier.align(Alignment.TopCenter),
                             onClick = { url ->
                                 openUrl(context, url)
@@ -407,7 +406,7 @@ fun FullscreenVideoPlayer(
 
                     if (showBottomSponsorBanner) {
                         SponsorshipBanner(
-                            banner = sponsorshipBanner!!,
+                            banner = sponsorshipBanner,
                             modifier = Modifier.align(Alignment.BottomCenter),
                             onClick = { url ->
                                 openUrl(context, url)
@@ -493,7 +492,7 @@ fun VideoOverlay(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(start = 32.dp, end = 32.dp, top = 32.dp, bottom = 48.dp)
+            .padding(start = 32.dp, end = 16.dp, top = 48.dp, bottom = 72.dp)
             .zIndex(1f)
     ) {
 
@@ -622,55 +621,7 @@ fun VideoOverlay(
     }
 }
 
-
-@Composable
-fun HideSystemBars() {
-    val context = LocalContext.current
-    val activity = remember(context) {
-        context.findActivity()
-    }
-
-    DisposableEffect(activity) {
-        val window = activity?.window
-
-        if (window != null) {
-            WindowCompat.setDecorFitsSystemWindows(window, false)
-
-            WindowInsetsControllerCompat(
-                window,
-                window.decorView
-            ).apply {
-                hide(WindowInsetsCompat.Type.systemBars())
-                systemBarsBehavior =
-                    WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            }
-        }
-
-        onDispose {
-            if (window != null) {
-                WindowCompat.setDecorFitsSystemWindows(window, true)
-
-                WindowInsetsControllerCompat(
-                    window,
-                    window.decorView
-                ).show(WindowInsetsCompat.Type.systemBars())
-            }
-        }
-    }
-}
-
-fun Context.findActivity(): Activity? {
-    var context = this
-
-    while (context is ContextWrapper) {
-        if (context is Activity) return context
-        context = context.baseContext
-    }
-
-    return null
-}
-
-private fun openUrl(
+fun openUrl(
     context: Context,
     url: String
 ) {

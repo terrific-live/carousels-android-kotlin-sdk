@@ -71,7 +71,8 @@ data class SponsorshipBannerDto(
     val clickRedirect: String? = null,
     val backgroundColor: String? = null,
     val logoUrl: String?,
-    val position: String?
+    val position: String?,
+    val isBottom: Boolean
 )
 
 @Serializable
