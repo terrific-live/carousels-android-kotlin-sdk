@@ -5,6 +5,7 @@ package demo.terrific.compose.compose.horizontal
 import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.snapping.SnapPosition
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -120,19 +121,40 @@ fun VideoCarousel(
                 maxAssetWidth,
                 maxWidth * 0.8f
             )
-
             val horizontalPadding = (maxWidth - pageWidth) / 2
+
+            val carouselSnapPosition = remember {
+                object : SnapPosition {
+
+                    override fun position(
+                        layoutSize: Int,
+                        itemSize: Int,
+                        beforeContentPadding: Int,
+                        afterContentPadding: Int,
+                        itemIndex: Int,
+                        itemCount: Int
+                    ): Int {
+                        return if (itemIndex == 0) {
+                            beforeContentPadding
+                        } else {
+                            (layoutSize - itemSize) / 2
+                        }
+                    }
+                }
+            }
 
             HorizontalPager(
                 state = pagerState,
                 pageSize = PageSize.Fixed(pageWidth),
                 contentPadding = PaddingValues(
-                    horizontal = horizontalPadding
+                    start = 16.dp,
+                    end = horizontalPadding
                 ),
                 pageSpacing = 16.dp,
+                snapPosition = carouselSnapPosition,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(carouselHeight),
+                    .height(style.carouselHeight),
                 verticalAlignment = Alignment.CenterVertically,
                 beyondViewportPageCount = 1
             ) { page ->

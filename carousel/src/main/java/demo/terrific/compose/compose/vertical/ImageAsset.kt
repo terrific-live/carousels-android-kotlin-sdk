@@ -163,7 +163,7 @@ fun ImageOverlay(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(start = 32.dp, end = 32.dp, top = 32.dp, bottom = 48.dp)
+            .padding(start = 32.dp, end = 16.dp, top = 32.dp, bottom = 72.dp)
             .zIndex(1f)
     ) {
 
