@@ -414,6 +414,33 @@ fun FullscreenVideoPlayer(
                         )
                     }
 
+                    sponsorship?.badge?.let {
+                        val alignment = when (it.position) {
+                            "top-left" -> {
+                                Alignment.TopStart
+                            }
+                            "top-center" -> {
+                                Alignment.TopCenter
+                            }
+                            else -> {
+                                Alignment.TopEnd
+                            }
+                        }
+                        SponsorshipBadge(
+                            title = it.title,
+                            logoUrl = it.logoUrl,
+                            link = it.clickRedirect,
+                            backgroundColor = sponsorship.badge.backgroundColor?.toComposeColorOrNull()
+                                ?: Color(0xFFF96544),
+                            modifier = Modifier
+                                .align(alignment),
+                            style = style,
+                            onClick = { url ->
+                                openUrl(context, url)
+                            }
+
+                        )
+                    }
                     VideoOverlay(
                         video = video,
                         timestampFormat = timestampFormat,
@@ -421,7 +448,6 @@ fun FullscreenVideoPlayer(
                         onLikeClick = onLikeClick,
                         onBackClicked = onBackClicked,
                         player = player,
-                        sponsorship = sponsorship,
                         style = style
                     )
 
@@ -485,7 +511,6 @@ fun VideoOverlay(
     onLikeClick: (String) -> Unit,
     onBackClicked: () -> Unit,
     player: ExoPlayer,
-    sponsorship: SponsorshipDto?,
     style: VideoFeatureStyle
 ) {
 
@@ -514,18 +539,6 @@ fun VideoOverlay(
 
         if (formatted?.isNotEmpty() == true) {
             DateTimeBadge(formatted)
-        }
-
-        sponsorship?.badge?.let {
-            SponsorshipBadge(
-                title = it.title,
-                logoUrl = it.logoUrl,
-                backgroundColor = sponsorship.badge.backgroundColor?.toComposeColorOrNull()
-                    ?: Color(0xFFF96544),
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(12.dp)
-            )
         }
 
         var isMuted by remember { mutableStateOf(false) }

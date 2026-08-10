@@ -67,6 +67,7 @@ fun PollScreen(
     onLikeClick: (String) -> Unit,
     style: VideoFeatureStyle
 ) {
+    val context = LocalContext.current
     val hasVoted = selectedOptionText != null
     var progress by remember { mutableFloatStateOf(0f) }
 
@@ -111,18 +112,6 @@ fun PollScreen(
             )
         }
 
-//        sponsorship?.badge?.let {
-//            SponsorshipBadge(
-//                title = it.title,
-//                logoUrl = it.logoUrl,
-//                backgroundColor = sponsorship.badge.backgroundColor?.toComposeColorOrNull()
-//                    ?: Color(0xFFF96544),
-//                modifier = Modifier
-//                    .align(Alignment.TopCenter)
-//                    .padding(top = 8.dp)
-//                    .zIndex(10f)
-//            )
-//        }
 
         Column(
             modifier = Modifier
@@ -187,11 +176,18 @@ fun PollScreen(
         )
 
         sponsorship?.let {
+            val alignment = if (it.poll?.adPosition == "top") {
+                Alignment.TopCenter
+            } else {
+                Alignment.BottomCenter
+            }
             PollSponsorLogo(
                 sponsorship = it,
-                modifier = Modifier.align(Alignment.BottomCenter)
-                    .padding(bottom = 68.dp),
-                onClick = {}
+                modifier = Modifier.align(alignment)
+                    .padding(bottom = 68.dp, top = 16.dp),
+                onClick = { url ->
+                    openUrl(context, url)
+                }
             )
         }
     }

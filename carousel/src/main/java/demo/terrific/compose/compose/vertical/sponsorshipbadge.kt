@@ -24,32 +24,41 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import demo.terrific.compose.model.SponsorshipBannerDto
 import demo.terrific.compose.model.SponsorshipDto
+import demo.terrific.compose.style.VideoFeatureStyle
+import demo.terrific.compose.style.withSdkFont
 
 @Composable
 fun SponsorshipBadge(
     title: String?,
     logoUrl: String?,
     backgroundColor: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    style: VideoFeatureStyle,
+    onClick: (String) -> Unit,
+    link: String?
 ) {
+
     Row(
         modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
-//            .padding(horizontal = 12.dp, vertical = 8.dp)
-            .background(backgroundColor),
+            .clip(RoundedCornerShape(4.dp))
+            .background(backgroundColor)
+            .clickable(
+                enabled = !link.isNullOrBlank()
+            ) {
+                link?.let(onClick)
+            },
         verticalAlignment = Alignment.CenterVertically
     ) {
         title?.let {
             Text(
                 text = it,
                 color = Color.Black,
-                fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(12.dp)
+                modifier = Modifier.padding(12.dp),
+                style = style.bodyTextStyle.withSdkFont(style.fontFamily)
             )
         }
 
@@ -108,7 +117,7 @@ fun SponsorshipBanner(
 fun PollSponsorLogo(
     sponsorship: SponsorshipDto,
     modifier: Modifier,
-    onClick: (() -> Unit)? = null
+    onClick: (String) -> Unit,
 ) {
     Column(
         modifier = modifier,
@@ -121,8 +130,10 @@ fun PollSponsorLogo(
             modifier = Modifier
                 .size(48.dp)
                 .clip(RoundedCornerShape(8.dp))
-                .clickable(enabled = onClick != null) {
-                    onClick?.invoke()
+                .clickable(
+                    enabled = !sponsorship.clickRedirect.isNullOrBlank()
+                ) {
+                    sponsorship.clickRedirect?.let(onClick)
                 }
         )
     }
