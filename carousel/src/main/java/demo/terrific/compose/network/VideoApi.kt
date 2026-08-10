@@ -3,6 +3,7 @@ package demo.terrific.compose.network
 import demo.terrific.compose.model.AssetsResponse
 import retrofit2.http.GET
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface VideoApi {
 
@@ -15,6 +16,7 @@ interface VideoApi {
     @GET("api/v1/stores/{storeId}/carousel/{displayId}")
     suspend fun getVerticalAssets(
         @Path("storeId") storeId: String,
-        @Path("displayId") displayId: String
+        @Path("displayId") displayId: String,
+        @Query("number-of-items") numberOfItems: Int = 50
     ): AssetsResponse
 }

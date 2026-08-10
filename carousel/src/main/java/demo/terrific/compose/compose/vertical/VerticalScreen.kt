@@ -2,22 +2,25 @@
 
 package demo.terrific.compose.compose.vertical
 
-import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import androidx.annotation.OptIn
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.VolumeUp
@@ -52,8 +55,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.zIndex
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
@@ -91,7 +92,6 @@ fun VerticalScreen(
     sponsorship: SponsorshipDto?,
     style: VideoFeatureStyle
 ) {
-    HideSystemBars()
 
     val startIndex = remember(assets, videoId) {
         assets.indexOfFirst { it.id == videoId }.takeIf { it >= 0 } ?: 0
@@ -150,7 +150,9 @@ fun VerticalScreen(
 
     VerticalPager(
         state = pagerState,
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .fillMaxSize()
+            .windowInsetsPadding(WindowInsets.systemBars)
     ) { page ->
         val asset = assets[page]
 
@@ -274,12 +276,17 @@ fun FullscreenVideoPlayer(
     var progress by remember { mutableFloatStateOf(0f) }
 
     val player = remember(video.id) {
-        ExoPlayer.Builder(context).build().apply {
-            video.media?.mobileUrl?.let { setMediaItem(MediaItem.fromUri(it)) }
-            prepare()
-            playWhenReady = true
-            repeatMode = Player.REPEAT_MODE_ONE
-        }
+        ExoPlayer.Builder(context.applicationContext)
+            .build()
+            .apply {
+                video.media?.mobileUrl?.let {
+                    setMediaItem(MediaItem.fromUri(it))
+                }
+
+                prepare()
+                playWhenReady = false
+                repeatMode = Player.REPEAT_MODE_ONE
+            }
     }
 
     VideoSdk.analytics.sendEvent(
@@ -293,17 +300,32 @@ fun FullscreenVideoPlayer(
         )
     )
 
-    var isLoading by remember { mutableStateOf(true) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isLoading by remember(video.id) {
+        mutableStateOf(true)
+    }
+
+    var errorMessage by remember(video.id) {
+        mutableStateOf<String?>(null)
+    }
 
     DisposableEffect(player) {
         val listener = object : Player.Listener {
 
             override fun onPlaybackStateChanged(playbackState: Int) {
-                isLoading = playbackState == Player.STATE_BUFFERING
-                if (playbackState == Player.STATE_READY) {
-                    isLoading = false
-                    errorMessage = null
+                when (playbackState) {
+                    Player.STATE_BUFFERING -> {
+                        isLoading = true
+                    }
+
+                    Player.STATE_READY -> {
+                        isLoading = false
+                        errorMessage = null
+                    }
+
+                    Player.STATE_ENDED,
+                    Player.STATE_IDLE -> {
+                        isLoading = false
+                    }
                 }
             }
 
@@ -316,6 +338,8 @@ fun FullscreenVideoPlayer(
         player.addListener(listener)
 
         onDispose {
+            player.playWhenReady = false
+            player.pause()
             player.removeListener(listener)
             player.release()
         }
@@ -330,11 +354,6 @@ fun FullscreenVideoPlayer(
             player.pause()
         }
     }
-
-    DisposableEffect(player) {
-        onDispose { player.release() }
-    }
-
     LaunchedEffect(player, isActive) {
         while (isActive) {
             val duration = player.duration
@@ -354,6 +373,18 @@ fun FullscreenVideoPlayer(
 
 
     Box(modifier = Modifier.fillMaxSize()) {
+
+        video.background?.let {
+            AsyncImage(
+                model = it.imageUrl,
+                contentDescription = "background",
+                modifier = Modifier
+                    .fillMaxSize(),
+//                            .clip(RoundedCornerShape(16.dp)),
+                contentScale = ContentScale.Crop
+            )
+        }
+
         Column(modifier = Modifier.fillMaxSize()) {
             Box(
                 modifier = Modifier
@@ -376,64 +407,130 @@ fun FullscreenVideoPlayer(
                     }
                 }
 
-                video.background?.let {
-                    AsyncImage(
-                        model = it.imageUrl,
-                        contentDescription = "background",
-                        modifier = Modifier
-                            .fillMaxSize(),
-//                            .clip(RoundedCornerShape(16.dp)),
-                        contentScale = ContentScale.Crop
-                    )
+
+                val sponsorshipBanner = sponsorship
+                    ?.takeIf { it.enabled && it.adPlacementType == "banner" }
+                    ?.banner
+
+                val bannerPosition = sponsorshipBanner?.position?.lowercase()
+
+                val showTopSponsorBanner =
+                    sponsorshipBanner != null &&
+                            (bannerPosition == "top" || bannerPosition == "top-bottom")
+
+                val showBottomSponsorBanner =
+                    sponsorshipBanner != null &&
+                            (bannerPosition == "bottom" || bannerPosition == "top-bottom")
+
+
+                val videoContainerModifier = if (video.background != null) {
+                    Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                } else {
+                    Modifier.fillMaxSize()
                 }
 
-                AndroidView(
-                    factory = {
-                        PlayerView(it).apply {
-                            this.player = player
-                            useController = false
-                            resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-                        }
-                    },
-                    modifier = if (video.background != null) {
-                        Modifier
-                            .fillMaxSize()
-                            .padding(16.dp)
-                            .clip(RoundedCornerShape(16.dp))
-                    } else {
-                        Modifier
-                            .fillMaxSize()
-                    }
-                )
-
-                VideoOverlay(
-                    video = video,
-                    timestampFormat = timestampFormat,
-                    isLiked = isLiked,
-                    onLikeClick = onLikeClick,
-                    onBackClicked = onBackClicked,
-                    player = player,
-                    sponsorship = sponsorship,
-                    style = style
-                )
-
-                VideoProgressBar(
-                    progress = progress,
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .padding(start = 24.dp, top = 0.dp, end = 24.dp, bottom = 32.dp),
-                    height = 8.dp,
-                    trackColor = Color.White.copy(alpha = 0.28f),
-                    progressColor = Color.White
-                )
-
-                if (showSwipeHint) {
-                    SwipeHintOverlay(
-                        modifier = Modifier.align(Alignment.Center),
-                        onFinished = onSwipeHintFinished
+                Box(
+                    modifier = videoContainerModifier
+                ) {
+                    AndroidView(
+                        factory = {
+                            PlayerView(it).apply {
+                                this.player = player
+                                useController = false
+                                resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL
+                            }
+                        },
+                        update = {
+                            it.player = player
+                        },
+                        modifier = Modifier.fillMaxSize()
                     )
 
+                    if (showTopSponsorBanner) {
+                        SponsorshipBanner(
+                            banner = sponsorshipBanner,
+                            modifier = Modifier.align(Alignment.TopCenter),
+                            onClick = { url ->
+                                openUrl(context, url)
+                            }
+                        )
+                    }
+
+                    if (showBottomSponsorBanner) {
+                        SponsorshipBanner(
+                            banner = sponsorshipBanner,
+                            modifier = Modifier.align(Alignment.BottomCenter),
+                            onClick = { url ->
+                                openUrl(context, url)
+                            }
+                        )
+                    }
+
+                    sponsorship?.badge?.let {
+                        val alignment = when (it.position) {
+                            "top-left" -> {
+                                Alignment.TopStart
+                            }
+                            "top-center" -> {
+                                Alignment.TopCenter
+                            }
+                            else -> {
+                                Alignment.TopEnd
+                            }
+                        }
+                        SponsorshipBadge(
+                            title = it.title,
+                            logoUrl = it.logoUrl,
+                            link = it.clickRedirect,
+                            backgroundColor = sponsorship.badge.backgroundColor?.toComposeColorOrNull()
+                                ?: Color(0xFFF96544),
+                            modifier = Modifier
+                                .align(alignment),
+                            style = style,
+                            onClick = { url ->
+                                openUrl(context, url)
+                            }
+
+                        )
+                    }
+                    VideoOverlay(
+                        video = video,
+                        timestampFormat = timestampFormat,
+                        isLiked = isLiked,
+                        onLikeClick = onLikeClick,
+                        onBackClicked = onBackClicked,
+                        player = player,
+                        style = style
+                    )
+
+                    VideoProgressBar(
+                        progress = progress,
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .padding(
+                                start = 24.dp,
+                                end = 24.dp,
+                                bottom = if (showBottomSponsorBanner) {
+                                    48.dp
+                                } else {
+                                    0.dp
+                                }
+                            ),
+                        height = 8.dp,
+                        trackColor = Color.White.copy(alpha = 0.28f),
+                        progressColor = Color.White
+                    )
+
+                    if (showSwipeHint) {
+                        SwipeHintOverlay(
+                            modifier = Modifier.align(Alignment.Center),
+                            onFinished = onSwipeHintFinished
+                        )
+                    }
                 }
             }
 
@@ -449,7 +546,7 @@ fun FullscreenVideoPlayer(
                                 )
                             )
                         )
-                        .padding(horizontal = 12.dp, vertical = 12.dp)
+                        .padding(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 16.dp)
                 ) {
                     TimelineProductsRow(
                         products = products,
@@ -469,14 +566,13 @@ fun VideoOverlay(
     onLikeClick: (String) -> Unit,
     onBackClicked: () -> Unit,
     player: ExoPlayer,
-    sponsorship: SponsorshipDto?,
     style: VideoFeatureStyle
 ) {
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(start = 32.dp, end = 32.dp, top = 32.dp, bottom = 48.dp)
+            .padding(start = 32.dp, end = 16.dp, top = 48.dp, bottom = 72.dp)
             .zIndex(1f)
     ) {
 
@@ -495,7 +591,11 @@ fun VideoOverlay(
             },
             modifier = Modifier.align(Alignment.TopEnd)
         ) {
-            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+            Icon(
+                painter = painterResource(R.drawable.ic_close),
+                contentDescription = "Close",
+                tint = Color.White
+            )
         }
 
         val formatted = remember(video.timestamp) {
@@ -504,18 +604,6 @@ fun VideoOverlay(
 
         if (formatted?.isNotEmpty() == true) {
             DateTimeBadge(formatted)
-        }
-
-        sponsorship?.badge?.let {
-            SponsorshipBadge(
-                title = it.title,
-                logoUrl = it.logoUrl,
-                backgroundColor = sponsorship.badge.backgroundColor?.toComposeColorOrNull()
-                    ?: Color(0xFFF96544),
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(12.dp)
-            )
         }
 
         var isMuted by remember { mutableStateOf(false) }
@@ -606,7 +694,7 @@ fun VideoOverlay(
                     lineHeight = 24.sp,
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
-                    style = style.titleTextStyle.withSdkFont(style.fontFamily)
+                    style = style.mainTitleTextStyle.withSdkFont(style.fontFamily)
                 )
             }
 
@@ -627,23 +715,16 @@ fun VideoOverlay(
     }
 }
 
-
-@Composable
-fun HideSystemBars() {
-
-    val activity = LocalContext.current as Activity
-
-    DisposableEffect(Unit) {
-
-        val controller = WindowCompat.getInsetsController(
-            activity.window,
-            activity.window.decorView
+fun openUrl(
+    context: Context,
+    url: String
+) {
+    runCatching {
+        context.startActivity(
+            Intent(
+                Intent.ACTION_VIEW,
+                Uri.parse(url)
+            ).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         )
-
-        controller.hide(WindowInsetsCompat.Type.statusBars())
-
-        onDispose {
-            controller.show(WindowInsetsCompat.Type.statusBars())
-        }
     }
 }

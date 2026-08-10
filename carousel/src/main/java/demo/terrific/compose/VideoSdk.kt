@@ -2,6 +2,7 @@ package demo.terrific.compose
 
 import AnalyticsEventMapper
 import android.content.Context
+import demo.terrific.compose.analytics.TerrificAnalyticsManager
 import com.google.gson.Gson
 import demo.terrific.compose.analytics.VideoAnalytics
 import demo.terrific.compose.analytics.VideoSdkAnalyticsListener
@@ -29,7 +30,7 @@ object VideoSdk {
         "https://terrific-live-polls.web.app/"
 
     private const val ANALYTICS_BASE_URL =
-        "https://us-central1-terrific-deploy.cloudfunctions.net/"
+        "https://us-central1-terrific-deploy.cloudfunctions.net/userEvents/"
 
     @Volatile
     private var isInitialized = false

@@ -1,15 +1,13 @@
 package demo.terrific
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
-import demo.terrific.compose.VideoSdk
-import demo.terrific.compose.analytics.VideoSdkAnalyticsListener
 import demo.terrific.compose.compose.common.AssetCarousel
-import demo.terrific.compose.model.analytics.UserEventRequest
 import demo.terrific.ui.theme.TerrificTheme
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -23,27 +21,34 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun AppRoot() {
+    LazyColumn() {
 
-    AssetCarousel(
-        storeId = "1FEyyLAlBJY8000v5nfL",
-        carouselId = "sQsA6UF3MwDfIz4TZXM7"
-    )
+        item {
+            AssetCarousel(
+                storeId = "1FEyyLAlBJY8000v5nfL",
+                carouselId = "sQsA6UF3MwDfIz4TZXM7"
+            )
+        }
+
+    }
+}
+
+
     //
 //    AssetCarousel(
 //        storeId = "X1VVeh6woKnmcYrLeO11",
 //        carouselId = "HsaLDYzu47paYmoCmoOD"
 //    )
 //
-    VideoSdk.setAnalyticsListener(
-        object : VideoSdkAnalyticsListener {
-            override fun onAnalyticsEventTracked(event: UserEventRequest) {
-                Log.d("SDK_ANALYTICS", "Tracked: ${event.name}")
-            }
-        }
-    )
+//    VideoSdk.setAnalyticsListener(
+//        object : VideoSdkAnalyticsListener {
+//            override fun onAnalyticsEventTracked(event: UserEventRequest) {
+//                Log.d("SDK_ANALYTICS", "Tracked: ${event.name}")
+//            }
+//        }
+//    )
 //
 //    AssetCarousel(
 //        storeId = "0bor4CHMEbm3M4Dluput",
 //        carouselId = "HmUOF0rG4fO1v9U63t7Z"
 //        )
-}

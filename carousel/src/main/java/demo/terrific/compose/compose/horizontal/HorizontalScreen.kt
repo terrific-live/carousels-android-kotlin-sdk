@@ -5,8 +5,10 @@ package demo.terrific.compose.compose.horizontal
 import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.snapping.SnapPosition
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -15,7 +17,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PageSize
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -28,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -39,10 +44,12 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import coil.compose.AsyncImage
 import demo.terrific.compose.VideoSdk
 import demo.terrific.compose.analytics.TimelineEvent
 import demo.terrific.compose.compose.common.DateTimeBadgeCarousel
 import demo.terrific.compose.compose.common.toFormatted
+import demo.terrific.compose.compose.vertical.openUrl
 import demo.terrific.compose.model.AssetDto
 import demo.terrific.compose.model.AssetType
 import demo.terrific.compose.model.CarouselConfigDto
@@ -60,20 +67,11 @@ fun VideoCarousel(
     onVideoClick: (String) -> Unit
 ) {
     val context = LocalContext.current
-    val pagerState = rememberPagerState(pageCount = { assets.size })
+    val pagerState = rememberPagerState(
+        pageCount = { assets.size }
+    )
 
-    val players = remember(assets) {
-        assets.map { asset ->
-            ExoPlayer.Builder(context).build().apply {
-                asset.media?.videoPreviewUrl?.let { url ->
-                    setMediaItem(MediaItem.fromUri(url))
-                }
-                prepare()
-                playWhenReady = false
-                repeatMode = Player.REPEAT_MODE_ONE
-            }
-        }
-    }
+    LaunchedEffect(pagerState.currentPage, assets) {
 
     VideoSdk.analytics.sendEvent(
         TimelineEvent.TimelineCarouselLoadedEvent(
@@ -101,128 +99,194 @@ fun VideoCarousel(
         }
     }
 
-    DisposableEffect(players) {
-        onDispose {
-            players.forEach { it.release() }
-        }
-    }
-
     LaunchedEffect(assets.size) {
         if (assets.size <= 1) return@LaunchedEffect
 
         while (true) {
-            delay(2000)
+            delay(2_000)
 
             if (!pagerState.isScrollInProgress) {
-                val nextPage = if (pagerState.currentPage == assets.lastIndex) {
-                    0
-                } else {
-                    pagerState.currentPage + 1
-                }
+                val nextPage =
+                    if (pagerState.currentPage == assets.lastIndex) {
+                        0
+                    } else {
+                        pagerState.currentPage + 1
+                    }
 
-//                pagerState.animateScrollToPage(nextPage)
+                 pagerState.animateScrollToPage(nextPage)
             }
         }
     }
+    Column() {
 
-//    Box(
-//        modifier = Modifier.fillMaxSize(),
-//        contentAlignment = Alignment.Center
-//    ) {
-//        HorizontalPager(
-//            state = pagerState,
-//            contentPadding = PaddingValues(horizontal = style.pagerHorizontalPadding),
-//            pageSpacing = style.pagerPageSpacing,
-//            modifier = Modifier
-//                .fillMaxSize()
-//                .height(style.pageHeight)
-//        ) { page ->
+        config?.sponsorship?.takeIf { it.enabled }?.let {
+            SponsorshipHeader(it)
+        }
 
-//    Column() {
-//
-//        config?.name?.let {
-//            Text(
-//                text = it,
-//                color = Color.White,
-//                fontSize = 20.sp,
-//                fontWeight = FontWeight.SemiBold,
-//                lineHeight = 24.sp,
-//                maxLines = 3,
-//                overflow = TextOverflow.Ellipsis
-//            )
-//        }
-//
-
-    HorizontalPager(
-        state = pagerState,
-        contentPadding = PaddingValues(horizontal = 32.dp),
-        pageSpacing = 8.dp,
-        modifier = Modifier.fillMaxSize(),
-        verticalAlignment = Alignment.CenterVertically
-    ) { page ->
-        val asset = assets[page]
-        val hasProducts = asset.products?.isNotEmpty() == true
-
-        Column(
-            modifier = Modifier
-                .height(style.carouselHeight)
-                .fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+        BoxWithConstraints(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center
         ) {
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .aspectRatio(9f / 16f)
-                    .clip(RoundedCornerShape(style.cornerRadius))
-            ) {
+            val carouselHeight = style.carouselHeight
+            val productHeight = style.productHeight
+            val productSpacing = style.productSpacing
 
-                when (asset.type) {
-                    AssetType.POLL.type -> {
-                        PollCarouselItem(
-                            asset = asset,
-                            timestampFormat = timestampFormat,
-                            assetId = asset.id,
-                            onClick = onVideoClick,
-                            modifier = Modifier.fillMaxSize(),
-                            style = style
-                        )
-                    }
+            val maxAssetWidth = carouselHeight * 9f / 16f
 
-                    AssetType.VIDEO.type -> {
-                        VideoCard(
-                            video = asset,
-                            timestampFormat = timestampFormat,
-                            player = players[page],
-                            onVideoClick = onVideoClick,
-                            textBottomPadding = if (hasProducts) 68.dp else 20.dp,
-                            style = style
-                        )
-                    }
+            val pageWidth = minOf(
+                maxAssetWidth,
+                maxWidth * 0.8f
+            )
+            val horizontalPadding = (maxWidth - pageWidth) / 2
 
-                    AssetType.IMAGE.type -> {
-                        CarouselImage(
-                            asset = asset,
-                            timestampFormat = timestampFormat,
-                            onVideoClick = onVideoClick,
-                            style = style
-                        )
+            val carouselSnapPosition = remember {
+                object : SnapPosition {
+
+                    override fun position(
+                        layoutSize: Int,
+                        itemSize: Int,
+                        beforeContentPadding: Int,
+                        afterContentPadding: Int,
+                        itemIndex: Int,
+                        itemCount: Int
+                    ): Int {
+                        return if (itemIndex == 0) {
+                            beforeContentPadding
+                        } else {
+                            (layoutSize - itemSize) / 2
+                        }
                     }
                 }
             }
 
-            if (hasProducts) {
-                Spacer(modifier = Modifier.height(style.productSpacing))
+            HorizontalPager(
+                state = pagerState,
+                pageSize = PageSize.Fixed(pageWidth),
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    end = horizontalPadding
+                ),
+                pageSpacing = 16.dp,
+                snapPosition = carouselSnapPosition,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(style.carouselHeight),
+                verticalAlignment = Alignment.CenterVertically,
+                beyondViewportPageCount = 1
+            ) { page ->
 
-                TimelineProductsRowCarousel(
-                    products = asset.products,
+                val asset = assets[page]
+                val hasProducts = asset.products?.isNotEmpty() == true
+
+                val requestedAssetHeight = if (hasProducts) {
+                    carouselHeight - productHeight - productSpacing
+                } else {
+                    carouselHeight
+                }
+
+                val requestedAssetWidth = requestedAssetHeight * 9f / 16f
+
+                val assetWidth = minOf(
+                    requestedAssetWidth,
+                    pageWidth
+                )
+
+                val assetHeight = assetWidth * 16f / 9f
+
+                val shouldPrepareVideo =
+                    asset.type == AssetType.VIDEO.type &&
+                            kotlin.math.abs(page - pagerState.currentPage) <= 1
+
+                val isCurrentPage =
+                    page == pagerState.currentPage &&
+                            !pagerState.isScrollInProgress
+
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                    ,
-                    style = style
-                )
+                        .height(carouselHeight),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Top
+                ) {
+
+                    Box(
+                        modifier = Modifier
+                            .width(assetWidth)
+                            .height(assetHeight)
+                            .clip(
+                                RoundedCornerShape(style.cornerRadius)
+                            )
+                    ) {
+                        when (asset.type) {
+                            AssetType.POLL.type -> {
+                                PollCarouselItem(
+                                    asset = asset,
+                                    timestampFormat = timestampFormat,
+                                    assetId = asset.id,
+                                    onClick = onVideoClick,
+                                    modifier = Modifier.fillMaxSize(),
+                                    style = style
+                                )
+                            }
+
+                            AssetType.VIDEO.type -> {
+                                VideoCard(
+                                    video = asset,
+                                    timestampFormat = timestampFormat,
+                                    shouldPrepare = shouldPrepareVideo,
+                                    isActive = isCurrentPage,
+                                    onVideoClick = onVideoClick,
+                                    textBottomPadding =
+                                        if (hasProducts) 68.dp else 20.dp,
+                                    style = style
+                                )
+                            }
+
+                            AssetType.IMAGE.type -> {
+                                CarouselImage(
+                                    asset = asset,
+                                    timestampFormat = timestampFormat,
+                                    onVideoClick = onVideoClick,
+                                    style = style
+                                )
+                            }
+                        }
+                    }
+
+                    if (hasProducts) {
+                        Spacer(
+                            modifier = Modifier.height(productSpacing)
+                        )
+
+
+                        TimelineProductsRowCarousel(
+                            products = asset.products,
+                            asset = asset,
+                            modifier = Modifier
+                                .fillMaxWidth()/*
+                            .height(productHeight)*/,
+                            style = style,
+                            onProductClicked = onVideoClick
+                        )
+                    }
+
+                }
             }
         }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        config?.sponsorship?.takeIf {
+            it.enabled &&
+                    it.adPlacementType == "banner" &&
+                    it.banner?.isBottom == true
+        }?.let {
+            HorizontalSponsorshipBanner(it,
+                onClick = { url ->
+                openUrl(context, url)
+            })
+        }
+
     }
 }
 
@@ -231,9 +295,77 @@ fun VideoCard(
     video: AssetDto,
     timestampFormat: String?,
     modifier: Modifier = Modifier,
-    player: ExoPlayer,
+    shouldPrepare: Boolean,
+    isActive: Boolean,
     onVideoClick: (String) -> Unit,
     textBottomPadding: Dp = 68.dp,
+    style: VideoFeatureStyle
+) {
+    val context = LocalContext.current
+    val videoUrl = video.media?.videoPreviewUrl
+
+    if (!shouldPrepare || videoUrl.isNullOrBlank()) {
+        VideoCardContent(
+            video = video,
+            timestampFormat = timestampFormat,
+            modifier = modifier,
+            player = null,
+            onVideoClick = onVideoClick,
+            textBottomPadding = textBottomPadding,
+            style = style
+        )
+
+        return
+    }
+
+    val player = remember(video.id, videoUrl) {
+        ExoPlayer.Builder(context.applicationContext)
+            .build()
+            .apply {
+                setMediaItem(MediaItem.fromUri(videoUrl))
+                repeatMode = Player.REPEAT_MODE_ONE
+                playWhenReady = false
+                prepare()
+            }
+    }
+
+    LaunchedEffect(player, isActive) {
+        if (isActive) {
+            player.playWhenReady = true
+            player.play()
+        } else {
+            player.playWhenReady = false
+            player.pause()
+        }
+    }
+
+    DisposableEffect(player) {
+        onDispose {
+            player.playWhenReady = false
+            player.stop()
+            player.release()
+        }
+    }
+
+    VideoCardContent(
+        video = video,
+        timestampFormat = timestampFormat,
+        modifier = modifier,
+        player = player,
+        onVideoClick = onVideoClick,
+        textBottomPadding = textBottomPadding,
+        style = style
+    )
+}
+
+@Composable
+private fun VideoCardContent(
+    video: AssetDto,
+    timestampFormat: String?,
+    modifier: Modifier,
+    player: ExoPlayer?,
+    onVideoClick: (String) -> Unit,
+    textBottomPadding: Dp,
     style: VideoFeatureStyle
 ) {
     Box(
@@ -274,15 +406,34 @@ fun VideoCard(
 //                )
             }
     ) {
-        AndroidView(
-            factory = {
-                PlayerView(it).apply {
-                    this.player = player
-                    useController = false
-                }
-            },
-            modifier = Modifier.fillMaxSize()
-        )
+        if (player != null) {
+            AndroidView(
+                factory = { viewContext ->
+                    PlayerView(viewContext).apply {
+                        this.player = player
+                        useController = false
+                    }
+                },
+                update = { playerView ->
+                    if (playerView.player !== player) {
+                        playerView.player = player
+                    }
+                },
+                onRelease = { playerView ->
+                    playerView.player = null
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+        } else {
+            video.background?.imageUrl?.let { previewUrl ->
+                AsyncImage(
+                    model = previewUrl,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            }
+        }
 
         Box(
             modifier = Modifier
@@ -298,11 +449,16 @@ fun VideoCard(
                 )
         )
 
-        val formatted = remember(video.timestamp) {
-            timestampFormat?.let { video.timestamp?.toFormatted(it) }
+        val formatted = remember(
+            video.timestamp,
+            timestampFormat
+        ) {
+            timestampFormat?.let {
+                video.timestamp?.toFormatted(it)
+            }
         }
 
-        if (formatted?.isNotEmpty() == true) {
+        if (!formatted.isNullOrEmpty()) {
             DateTimeBadgeCarousel(
                 text = formatted,
                 modifier = Modifier
@@ -321,18 +477,37 @@ fun VideoCard(
                     bottom = textBottomPadding
                 )
         ) {
-            video.title?.let {
+            video.title?.let { title ->
                 Text(
-                    text = it,
+                    text = title,
                     color = Color.White,
                     fontWeight = FontWeight.SemiBold,
                     lineHeight = 24.sp,
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis,
-                    style = style.subtitleTextStyle.withSdkFont(style.fontFamily)
+                    style = style.subtitleTextStyle.withSdkFont(
+                        style.fontFamily
+                    )
                 )
             }
 
+            Spacer(
+                modifier = Modifier.height(6.dp)
+            )
+
+            video.description?.let { description ->
+                Text(
+                    text = description,
+                    color = Color.White,
+                    fontWeight = FontWeight.SemiBold,
+                    lineHeight = 24.sp,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    style = style.bodyTextStyle.withSdkFont(
+                        style.fontFamily
+                    )
+                )
+            }
         }
     }
 }

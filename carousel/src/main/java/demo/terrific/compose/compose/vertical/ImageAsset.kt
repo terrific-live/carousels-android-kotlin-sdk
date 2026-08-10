@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material3.Icon
@@ -176,7 +175,7 @@ fun ImageOverlay(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(start = 32.dp, end = 32.dp, top = 32.dp, bottom = 48.dp)
+            .padding(start = 32.dp, end = 16.dp, top = 32.dp, bottom = 72.dp)
             .zIndex(1f)
     ) {
 
@@ -195,7 +194,11 @@ fun ImageOverlay(
             },
             modifier = Modifier.align(Alignment.TopEnd)
         ) {
-            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+            Icon(
+                painter = painterResource(R.drawable.ic_close),
+                contentDescription = "Close",
+                tint = Color.White
+            )
         }
 
         val formatted = remember(asset.timestamp) {

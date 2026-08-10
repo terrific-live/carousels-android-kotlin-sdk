@@ -79,14 +79,14 @@ fun DateTimeBadge(
 ) {
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(Color(0xFFF4F4F4))
-            .padding(horizontal = 18.dp, vertical = 12.dp)
+            .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         Text(
             text = text,
             color = Color(0xFF111111),
-            fontSize = 18.sp,
+            fontSize = 14.sp,
             fontWeight = FontWeight.Bold
         )
     }
@@ -99,7 +99,7 @@ fun DateTimeBadgeCarousel(
 ) {
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(4.dp))
+            .clip(RoundedCornerShape(12.dp))
             .background(Color(0xFFF4F4F4))
             .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
@@ -117,10 +117,12 @@ private fun formatTimestamp(
 ): String {
     return pattern
         .replace("{hh}", "hh")
+        .replace("{HH}", "HH")
         .replace("{mm}", "mm")
         .replace("{DD}", "dd")
         .replace("{MM}", "MM")
         .replace("{YY}", "YY")
         .replace("{YYYY}", "YYYY")
         .replace("{hh}h{mm}", "hhhmm")
+        .replace("{HH}H{mm}", "HHHmm")
 }

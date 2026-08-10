@@ -14,8 +14,13 @@ data class VideoFeatureStyle(
     val pagerHorizontalPadding: Dp = 48.dp,
     val pagerPageSpacing: Dp = 16.dp,
     val productSpacing: Dp = 12.dp,
+    val productHeight: Dp = 96.dp,
     val productHeightFraction: Float = 0.16f,
     val fontFamily: FontFamily = DefaultSdkFontFamily,
+
+    val mainTitleTextStyle: TextStyle = TextStyle(
+        fontSize = 28.sp
+    ),
 
     val titleTextStyle: TextStyle = TextStyle(
         fontSize = 20.sp

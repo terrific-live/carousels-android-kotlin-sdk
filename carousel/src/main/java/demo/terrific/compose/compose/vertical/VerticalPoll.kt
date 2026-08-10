@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material.icons.filled.ThumbUpOffAlt
 import androidx.compose.material.icons.outlined.Share
@@ -35,7 +34,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -43,7 +44,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import demo.terrific.compose.VideoSdk
 import demo.terrific.compose.analytics.TimelineEvent
+import coil.compose.AsyncImage
+import demo.terrific.R
+import demo.terrific.compose.compose.common.DateTimeBadge
 import demo.terrific.compose.compose.common.VideoProgressBar
+import demo.terrific.compose.compose.common.toFormatted
 import demo.terrific.compose.compose.horizontal.toComposeColorOrNull
 import demo.terrific.compose.model.AssetDto
 import demo.terrific.compose.model.PollOptionDto
@@ -64,6 +69,7 @@ fun PollScreen(
     onLikeClick: (String) -> Unit,
     style: VideoFeatureStyle
 ) {
+    val context = LocalContext.current
     val hasVoted = selectedOptionText != null
     var progress by remember { mutableFloatStateOf(0f) }
 
@@ -92,8 +98,8 @@ fun PollScreen(
         }
     }
 
-    Box(
-        modifier = Modifier.background(
+    val backgroundModifier = if (asset.background == null) {
+        Modifier.background(
             Brush.verticalGradient(
                 listOf(
                     asset.background?.color?.primary?.toComposeColorOrNull() ?: Color(0xFFA61E2C),
@@ -101,20 +107,24 @@ fun PollScreen(
                 )
             )
         )
-    ) {
+    } else {
+        Modifier
+    }
 
-        sponsorship?.badge?.let {
-            SponsorshipBadge(
-                title = it.title,
-                logoUrl = it.logoUrl,
-                backgroundColor = sponsorship.badge.backgroundColor?.toComposeColorOrNull()
-                    ?: Color(0xFFF96544),
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 8.dp)
-                    .zIndex(10f)
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .then(backgroundModifier)
+    ) {
+        asset.background?.let {
+            AsyncImage(
+                model = asset.background.imageUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
             )
         }
+
 
         Column(
             modifier = Modifier
@@ -181,17 +191,6 @@ fun PollScreen(
             }
         }
 
-//        LinearProgressIndicator(
-//            progress = { progress },
-//            color = Color.Blue,
-//            modifier = Modifier
-//                .align(Alignment.BottomCenter)
-//                .fillMaxWidth()
-//                .padding(horizontal = 16.dp, vertical = 32.dp)
-//                .height(4.dp),
-//        )
-
-
         VideoProgressBar(
             progress = progress,
             modifier = Modifier
@@ -210,6 +209,22 @@ fun PollScreen(
             onBackClicked = onBackClicked,
             style = style
         )
+
+        sponsorship?.let {
+            val alignment = if (it.poll?.adPosition == "top") {
+                Alignment.TopCenter
+            } else {
+                Alignment.BottomCenter
+            }
+            PollSponsorLogo(
+                sponsorship = it,
+                modifier = Modifier.align(alignment)
+                    .padding(bottom = 68.dp, top = 16.dp),
+                onClick = { url ->
+                    openUrl(context, url)
+                }
+            )
+        }
     }
 }
 
@@ -229,14 +244,15 @@ private fun PollOptionButton(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(82.dp)
                 .padding(horizontal = 22.dp),
             contentAlignment = Alignment.CenterStart
         ) {
             Text(
                 text = text,
                 color = Color(0xFF1C1C1C),
-                style = style.subtitleTextStyle.withSdkFont(style.fontFamily)
+                style = style.subtitleTextStyle.withSdkFont(style.fontFamily),
+                modifier = Modifier
+                    .padding(vertical = 12.dp)
             )
         }
     }
@@ -324,7 +340,7 @@ fun PollOverlay(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(start = 32.dp, end = 32.dp, top = 32.dp, bottom = 48.dp)
+            .padding(start = 32.dp, end = 16.dp, top = 32.dp, bottom = 72.dp)
             .zIndex(1f)
     ) {
 
@@ -343,7 +359,22 @@ fun PollOverlay(
             },
             modifier = Modifier.align(Alignment.TopEnd)
         ) {
-            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+            Icon(
+                painter = painterResource(R.drawable.ic_close),
+                contentDescription = "Close",
+                tint = Color.White
+            )
+        }
+
+
+        val formatted = remember(asset.timestamp) {
+            asset.timestamp?.toFormatted()
+        }
+
+//         DATE
+
+        if (formatted?.isNotEmpty() == true) {
+            DateTimeBadge(formatted)
         }
 
         // RIGHT ACTIONS

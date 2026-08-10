@@ -2,7 +2,12 @@ package demo.terrific.compose.compose.common
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -11,11 +16,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import demo.terrific.compose.VideoSdk
 import demo.terrific.compose.compose.horizontal.VideoCarousel
 import demo.terrific.compose.compose.vertical.VerticalScreen
 import demo.terrific.compose.controller.VideoFeatureController
 import demo.terrific.compose.style.VideoFeatureStyle
+import demo.terrific.compose.style.withSdkFont
 
 @Composable
 fun AssetCarousel(
@@ -27,26 +37,44 @@ fun AssetCarousel(
     val controller = rememberVideoFeatureController(storeId = storeId)
     val state by controller.state.collectAsState()
 
-    LaunchedEffect(storeId) {
+    LaunchedEffect(storeId, carouselId) {
         controller.load(storeId, carouselId)
     }
 
     when {
         state.isLoading -> {
-            Box(modifier = modifier.fillMaxSize()) {
-//                CircularProgressIndicator()
-            }
+            Box(
+                modifier = modifier
+                    .fillMaxWidth()
+                    .height(style.carouselHeight)
+            )
         }
 
         state.error != null -> {
             VideoErrorScreen(
-                modifier = modifier.fillMaxSize(),
+                modifier = modifier
+                    .fillMaxWidth()
+                    .height(style.carouselHeight),
                 onRetryClick = controller::retry,
                 onCloseClick = controller::onBack
             )
         }
 
         state.screen is VideoScreen.Carousel -> {
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Text(
+                text = state.configDto?.name.orEmpty(),
+                modifier = Modifier.padding(
+                    start = 16.dp,
+                    end = 32.dp,
+                    bottom = 0.dp
+                ),
+                fontWeight = FontWeight.SemiBold,
+                style = style.titleTextStyle.withSdkFont(style.fontFamily)
+            )
+
             VideoCarousel(
                 assets = state.assets,
                 timestampFormat = state.timestampFormat,
@@ -62,20 +90,30 @@ fun AssetCarousel(
                 ?.id
                 .orEmpty()
 
-            VerticalScreen(
-                assets = state.assets,
-                timestampFormat = state.timestampFormat,
-                likedVideos = state.likedVideoIds,
-                selectedPollAnswers = state.selectedPollAnswers,
-                videoId = selectedVideoId,
-                onLikeClick = { id ->
-                    controller.onLikeClick(id)
-                },
-                onPollOptionClick = controller::onPollOptionClick,
-                onBackClicked = controller::onBack,
-                sponsorship = state.configDto?.sponsorship,
-                style = style
-            )
+            Dialog(
+                onDismissRequest = controller::onBack,
+                properties = DialogProperties(
+                    usePlatformDefaultWidth = false,
+                    decorFitsSystemWindows = false
+                )
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    VerticalScreen(
+                        assets = state.assets,
+                        timestampFormat = state.timestampFormat,
+                        likedVideos = state.likedVideoIds,
+                        selectedPollAnswers = state.selectedPollAnswers,
+                        videoId = selectedVideoId,
+                        onLikeClick = controller::onLikeClick,
+                        onPollOptionClick = controller::onPollOptionClick,
+                        onBackClicked = controller::onBack,
+                        sponsorship = state.configDto?.sponsorship,
+                        style = style
+                    )
+                }
+            }
         }
     }
 }
