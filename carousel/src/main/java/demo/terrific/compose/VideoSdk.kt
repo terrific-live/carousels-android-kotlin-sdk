@@ -2,7 +2,6 @@ package demo.terrific.compose
 
 import AnalyticsEventMapper
 import android.content.Context
-import demo.terrific.compose.analytics.TerrificAnalyticsManager
 import com.google.gson.Gson
 import demo.terrific.compose.analytics.VideoAnalytics
 import demo.terrific.compose.analytics.VideoSdkAnalyticsListener

@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import demo.terrific.compose.VideoSdk
 import demo.terrific.compose.analytics.TimelineEvent
+import demo.terrific.compose.model.AssetDto
 import demo.terrific.compose.model.ProductDto
 import demo.terrific.compose.style.VideoFeatureStyle
 import demo.terrific.compose.style.withSdkFont
@@ -113,6 +114,7 @@ fun TimelineProductCard(
     asset: AssetDto
 ) {
 
+    val context = LocalContext.current
     val backgroundColor = product.background?.color?.toComposeColorOrNull() ?: Color(0xFF4A4A4A)
     val textColor = product.background?.textColor?.toComposeColorOrNull() ?: Color.White
     val badgeColor = product.badge?.color?.toComposeColorOrNull() ?: Color(0xFF2C2C2C)
@@ -129,8 +131,7 @@ fun TimelineProductCard(
                 parentUrl = "",
                 items = emptyList()
             ))
-            val intent = Intent(Intent.ACTION_VIEW, product.externalUrl?.toUri())
-            context.startActivity(intent)
+            onProductClicked(asset.id)
         }
     ) {
         Row(

@@ -73,30 +73,25 @@ fun VideoCarousel(
 
     LaunchedEffect(pagerState.currentPage, assets) {
 
-    VideoSdk.analytics.sendEvent(
-        TimelineEvent.TimelineCarouselLoadedEvent(
-            assetIds = assets.map { it.id },
-            assetTimestamps = assets.map { it.timestamp.toString() },
-            parentUrl = "",
-            totalAssets = assets.size,
-            position = 0
+        VideoSdk.analytics.sendEvent(
+            TimelineEvent.TimelineCarouselLoadedEvent(
+                assetIds = assets.map { it.id },
+                assetTimestamps = assets.map { it.timestamp.toString() },
+                parentUrl = "",
+                totalAssets = assets.size,
+                position = 0
+            )
         )
-    )
 
-    VideoSdk.analytics.sendEvent(
-        TimelineEvent.TimelineCarouselViewedEvent(
-            assetIds = assets.map { it.id },
-            assetTimestamps = assets.map { it.timestamp.toString() },
-            parentUrl = "",
-            totalAssets = assets.size,
-            position = 0
+        VideoSdk.analytics.sendEvent(
+            TimelineEvent.TimelineCarouselViewedEvent(
+                assetIds = assets.map { it.id },
+                assetTimestamps = assets.map { it.timestamp.toString() },
+                parentUrl = "",
+                totalAssets = assets.size,
+                position = 0
+            )
         )
-    )
-
-    LaunchedEffect(pagerState.currentPage, players) {
-        players.forEachIndexed { index, player ->
-            player.playWhenReady = index == pagerState.currentPage
-        }
     }
 
     LaunchedEffect(assets.size) {
