@@ -67,9 +67,9 @@ fun AssetCarousel(
             Text(
                 text = state.configDto?.name.orEmpty(),
                 modifier = Modifier.padding(
-                    start = 32.dp,
+                    start = 16.dp,
                     end = 32.dp,
-                    bottom = 16.dp
+                    bottom = 0.dp
                 ),
                 fontWeight = FontWeight.SemiBold,
                 style = style.titleTextStyle.withSdkFont(style.fontFamily)
