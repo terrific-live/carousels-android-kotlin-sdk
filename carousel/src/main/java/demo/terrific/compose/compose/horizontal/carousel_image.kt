@@ -34,7 +34,7 @@ fun CarouselImage(
     asset: AssetDto,
     timestampFormat: String?,
     modifier: Modifier = Modifier,
-    onVideoClick: (String) -> Unit,
+    onVideoClick: (AssetDto) -> Unit,
     textBottomPadding: Dp = 68.dp,
     style: VideoFeatureStyle
 ) {
@@ -44,18 +44,7 @@ fun CarouselImage(
             .clip(RoundedCornerShape(20.dp))
             .background(Color.Black)
             .clickable {
-                onVideoClick(asset.id)
-//                VideoSdk.analytics().trackEvent(
-//                    event = AnalyticsEvents.TimelineCarouselClicked,
-//                    auxData = AuxData(
-////                        assetType = "image",
-////                        assetId = asset.id,
-////                        assetIds = emptyList(),
-////                        assetTimestamps = emptyList(),
-//                        parentUrl = "",
-////                        totalAssets = 1
-//                        )
-//                )
+                onVideoClick(asset)
             }
     ) {
         AsyncImage(

@@ -36,8 +36,7 @@ import demo.terrific.compose.style.withSdkFont
 fun PollCarouselItem(
     asset: AssetDto,
     timestampFormat: String?,
-    assetId: String,
-    onClick: (String) -> Unit,
+    onClick: (AssetDto) -> Unit,
     modifier: Modifier = Modifier,
     style: VideoFeatureStyle
 ) {
@@ -76,7 +75,7 @@ fun PollCarouselItem(
                 .clip(RoundedCornerShape(28.dp))
                 .then(backgroundModifier)
                 .clickable {
-                    onClick(assetId)
+                    onClick(asset)
 //                    VideoSdk.analytics().trackEvent(
 //                        event = AnalyticsEvents.TimelineCarouselClicked,
 //                        auxData = AuxData(

@@ -20,6 +20,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import demo.terrific.compose.VideoSdk
+import demo.terrific.compose.analytics.TimelineEvent
+import demo.terrific.compose.analytics.basemodels.HorizontalSponsorshipPlacement
 import demo.terrific.compose.model.SponsorshipDto
 
 @Composable
@@ -35,6 +38,13 @@ fun HorizontalSponsorshipBanner(
             .background(Color(parseColor(sponsorship?.backgroundColor)))
             .clickable{
                 sponsorship?.clickRedirect?.let(onClick)
+                VideoSdk.analytics.sendEvent(
+                    TimelineEvent.TimelineCarouselSponsorshipClickedEvent(
+                        sponsorshipPlacement = HorizontalSponsorshipPlacement.TopLogo,
+                        sponsorshipUrl = sponsorship?.clickRedirect,
+                        parentUrl = ""
+                    )
+                )
             },
         contentAlignment = Alignment.Center
     ) {

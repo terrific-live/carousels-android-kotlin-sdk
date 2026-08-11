@@ -45,7 +45,7 @@ fun TimelineProductsRowCarousel(
     products: List<ProductDto>,
     modifier: Modifier = Modifier,
     style: VideoFeatureStyle,
-    onProductClicked: (String) -> Unit,
+    onProductClicked: (AssetDto) -> Unit,
     asset: AssetDto
 ) {
 
@@ -110,11 +110,10 @@ fun TimelineProductCard(
     product: ProductDto,
     modifier: Modifier = Modifier,
     style: VideoFeatureStyle,
-    onProductClicked: (String) -> Unit,
+    onProductClicked: (AssetDto) -> Unit,
     asset: AssetDto
 ) {
 
-    val context = LocalContext.current
     val backgroundColor = product.background?.color?.toComposeColorOrNull() ?: Color(0xFF4A4A4A)
     val textColor = product.background?.textColor?.toComposeColorOrNull() ?: Color.White
     val badgeColor = product.badge?.color?.toComposeColorOrNull() ?: Color(0xFF2C2C2C)
@@ -129,9 +128,10 @@ fun TimelineProductCard(
                 itemViewSource = "video",
                 product = product.name,
                 parentUrl = "",
-                items = emptyList()
+                items = emptyList(),
+                assetId = asset.id
             ))
-            onProductClicked(asset.id)
+            onProductClicked(asset)
         }
     ) {
         Row(

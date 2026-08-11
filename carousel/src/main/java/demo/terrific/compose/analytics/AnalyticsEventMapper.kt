@@ -6,17 +6,32 @@ import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
 internal class AnalyticsEventMapper(
-    private val externalUserId: () -> String,
-    private val sessionIdProvider: () -> String,
+    private val externalUserId: String,
+    private val userId: () -> String,
+    private val carouselId: String,
     private val storeIdProvider: () -> String
 ) {
+
+    private fun buildSessionId(
+        carouselId: String,
+        assetId: String?
+    ): String {
+        return if (assetId.isNullOrBlank()) {
+            carouselId
+        } else {
+            "$carouselId~$assetId"
+        }
+    }
 
     @OptIn(ExperimentalTime::class)
     fun map(event: AnalyticsEvent): AnalyticsRequest {
         val common = CommonFields(
             name = event.name,
-            userId = externalUserId(),
-            sessionId = sessionIdProvider(),
+            userId = userId(),
+            sessionId = buildSessionId(
+                carouselId = carouselId,
+                assetId = event.assetIdOrNull()
+            ),
             storeId = storeIdProvider(),
             eventId = UUID.randomUUID().toString(),
             timeStamp = Clock.System.now().toString()
@@ -35,7 +50,8 @@ internal class AnalyticsEventMapper(
                         "sponsorshipPlacement" to event.sponsorshipPlacement?.name,
                         "sponsorshipPosition" to event.sponsorshipPosition?.name,
                         "sponsorshipUrl" to event.sponsorshipUrl
-                    )
+                    ),
+                    externalUserId = externalUserId
                 )
             }
 
@@ -97,6 +113,7 @@ internal class AnalyticsEventMapper(
                     )
                 )
             }
+
             is TimelineEvent.TimelineAssetLikedEvent -> {
                 common.toRequest(
                     auxData = mapOfNotNull(
@@ -193,11 +210,12 @@ internal class AnalyticsEventMapper(
 
             is TimelineEvent.TimelineCarouselSponsorshipClickedEvent -> {
                 common.toRequest(
-                    auxData = mapOfNotNull(
+                    auxData = mapOf(
                         "parentUrl" to event.parentUrl,
                         "sponsorshipPlacement" to event.sponsorshipPlacement.name,
                         "sponsorshipUrl" to event.sponsorshipUrl
-                    )
+                    ),
+                    externalUserId = ""
                 )
             }
 
@@ -231,7 +249,8 @@ private data class CommonFields(
     fun toRequest(
         auxData: Map<String, Any?>,
         pollId: String? = null,
-        pollAnswer: String? = null
+        pollAnswer: String? = null,
+        externalUserId: String = ""
     ) = AnalyticsRequest(
         name = name,
         userId = userId,
@@ -239,10 +258,29 @@ private data class CommonFields(
         storeId = storeId,
         eventId = eventId,
         timeStamp = timeStamp,
-        auxData = auxData,
+        auxData = buildMap {
+            putAll(auxData)
+            put("externalUserId", externalUserId)
+        },
         pollId = pollId,
         pollAnswer = pollAnswer
     )
+}
+
+private fun AnalyticsEvent.assetIdOrNull(): String? {
+    return when (this) {
+        is TimelineEvent.TimelineAssetViewStartedEvent -> assetId
+        is TimelineEvent.TimelineAssetViewEndedEvent -> assetId
+        is TimelineEvent.TimelineAssetLikedEvent -> assetId
+        is TimelineEvent.TimelineAssetSharedEvent -> assetId
+        is TimelineEvent.TimelinePollVotedEvent -> assetId
+        is TimelineEvent.TimelineCarouselClickedEvent -> assetId
+        is TimelineEvent.TimelineCarouselHoveredEvent -> assetId
+        is TimelineEvent.TimelineProductClickedEvent -> assetId
+        is TimelineEvent.TimelineCTAButtonClickedEvent -> assetId
+
+        else -> null
+    }
 }
 
 private fun mapOfNotNull(

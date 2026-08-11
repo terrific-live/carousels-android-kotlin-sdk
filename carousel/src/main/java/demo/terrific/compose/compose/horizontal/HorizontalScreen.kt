@@ -64,7 +64,7 @@ fun VideoCarousel(
     timestampFormat: String?,
     config: CarouselConfigDto?,
     style: VideoFeatureStyle,
-    onVideoClick: (String) -> Unit
+    onVideoClick: (AssetDto) -> Unit
 ) {
     val context = LocalContext.current
     val pagerState = rememberPagerState(
@@ -78,8 +78,7 @@ fun VideoCarousel(
                 assetIds = assets.map { it.id },
                 assetTimestamps = assets.map { it.timestamp.toString() },
                 parentUrl = "",
-                totalAssets = assets.size,
-                position = 0
+                totalAssets = assets.size
             )
         )
 
@@ -88,8 +87,7 @@ fun VideoCarousel(
                 assetIds = assets.map { it.id },
                 assetTimestamps = assets.map { it.timestamp.toString() },
                 parentUrl = "",
-                totalAssets = assets.size,
-                position = 0
+                totalAssets = assets.size
             )
         )
     }
@@ -217,7 +215,6 @@ fun VideoCarousel(
                                 PollCarouselItem(
                                     asset = asset,
                                     timestampFormat = timestampFormat,
-                                    assetId = asset.id,
                                     onClick = onVideoClick,
                                     modifier = Modifier.fillMaxSize(),
                                     style = style
@@ -258,8 +255,7 @@ fun VideoCarousel(
                             products = asset.products,
                             asset = asset,
                             modifier = Modifier
-                                .fillMaxWidth()/*
-                            .height(productHeight)*/,
+                                .fillMaxWidth(),
                             style = style,
                             onProductClicked = onVideoClick
                         )
@@ -292,7 +288,7 @@ fun VideoCard(
     modifier: Modifier = Modifier,
     shouldPrepare: Boolean,
     isActive: Boolean,
-    onVideoClick: (String) -> Unit,
+    onVideoClick: (AssetDto) -> Unit,
     textBottomPadding: Dp = 68.dp,
     style: VideoFeatureStyle
 ) {
@@ -359,7 +355,7 @@ private fun VideoCardContent(
     timestampFormat: String?,
     modifier: Modifier,
     player: ExoPlayer?,
-    onVideoClick: (String) -> Unit,
+    onVideoClick: (AssetDto) -> Unit,
     textBottomPadding: Dp,
     style: VideoFeatureStyle
 ) {
@@ -369,7 +365,7 @@ private fun VideoCardContent(
             .clip(RoundedCornerShape(20.dp))
             .background(Color.Black)
             .clickable {
-                onVideoClick(video.id)
+                onVideoClick(video)
 
                 VideoSdk.analytics.sendEvent(
                     TimelineEvent.TimelineOpenedEvent(

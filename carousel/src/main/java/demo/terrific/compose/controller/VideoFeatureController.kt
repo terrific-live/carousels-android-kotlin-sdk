@@ -143,20 +143,24 @@ internal class VideoFeatureController(
         }
     }
 
-    fun onVideoClick(id: String) {
+    fun onVideoClick(asset: AssetDto) {
         _state.update {
             it.copy(
                 screen = VideoScreen.Feed,
-                selectedId = id
+                selectedId = asset.id
             )
         }
         VideoSdk.analytics.sendEvent(TimelineEvent.TimelineCarouselClickedEvent(
-            assetId = id,
-            assetIds = emptyList(),
-            assetTimestamps = emptyList(),
+            assetId = asset.id,
+            assetIds = _state.value.assets.map {
+                asset.id
+            },
+            assetTimestamps = _state.value.assets.map {
+                asset.timestamp.toString()
+            },
             parentUrl = "",
             totalAssets = 10, //fix
-            position = 0
+            position = asset.position
         ))
     }
 

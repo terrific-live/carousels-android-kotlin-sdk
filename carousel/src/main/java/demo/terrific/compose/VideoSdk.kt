@@ -29,7 +29,7 @@ object VideoSdk {
         "https://terrific-live-polls.web.app/"
 
     private const val ANALYTICS_BASE_URL =
-        "https://us-central1-terrific-deploy.cloudfunctions.net/userEvents/"
+        "https://us-central1-terrific-deploy.cloudfunctions.net/"
 
     @Volatile
     private var isInitialized = false
@@ -55,7 +55,9 @@ object VideoSdk {
     @Synchronized
     fun ensureInitialized(
         context: Context,
-        storeId: String
+        storeId: String,
+        carouselId: String,
+        externalUserId: String
     ) {
         if (isInitialized) return
 
@@ -95,12 +97,11 @@ object VideoSdk {
             SharedPrefsAnalyticsSessionStorage(applicationContext)
 
         val analyticsMapper = AnalyticsEventMapper(
-            externalUserId = {
+            externalUserId = externalUserId,
+            userId = {
                 analyticsSessionStorage.getOrCreateUserId()
             },
-            sessionIdProvider = {
-                analyticsSessionStorage.getOrCreateSessionId(storeId)
-            },
+            carouselId = carouselId,
             storeIdProvider = {
                 storeId
             }

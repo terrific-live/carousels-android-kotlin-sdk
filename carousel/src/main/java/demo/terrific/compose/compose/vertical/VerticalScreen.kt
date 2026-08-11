@@ -137,7 +137,8 @@ fun VerticalScreen(
                             netoAssetWatchTimeMs = now - assetViewStartedAt,
                             viewDurationMs = now - assetViewStartedAt,
                             position = previousPage,
-                            products = listOf()
+                            products = listOf(),
+                            assetId = asset.id
                         )
                     )
                 }
@@ -293,10 +294,11 @@ fun FullscreenVideoPlayer(
         event = TimelineEvent.TimelineAssetViewStartedEvent(
             assetType = video.type,
             parentUrl = "",
-            fixedPosition = 0,
-            position = 0,
+            fixedPosition = video.position,
+            position = video.position,
             products = emptyList(),
-            customProducts = emptyList()
+            customProducts = emptyList(),
+            assetId = video.id
         )
     )
 
@@ -619,7 +621,8 @@ fun VideoOverlay(
                     TimelineEvent.TimelineAssetLikedEvent(
                         parentUrl = "",
                         customProducts = emptyList(),
-                        position = 0
+                        position = video.position,
+                        assetId = video.id
                     )
                 )
                 onLikeClick(video.id)
@@ -645,7 +648,8 @@ fun VideoOverlay(
                         TimelineEvent.TimelineAssetSharedEvent(
                             parentUrl = "",
                             customProducts = emptyList(),
-                            position = 0
+                            position = video.position,
+                            assetId = video.id
                         )
                     )
                     val intent = Intent(Intent.ACTION_SEND).apply {

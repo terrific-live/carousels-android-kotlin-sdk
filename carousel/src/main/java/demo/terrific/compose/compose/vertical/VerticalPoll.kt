@@ -77,15 +77,16 @@ fun PollScreen(
         event = TimelineEvent.TimelineAssetViewStartedEvent(
             assetType = asset.type,
             parentUrl = "",
-            fixedPosition = 0,
-            position = 0,
+            fixedPosition = asset.position,
+            position = asset.position,
             products = emptyList(),
-            customProducts = emptyList()
+            customProducts = emptyList(),
+            assetId = asset.id
         )
     )
 
     LaunchedEffect(asset.id) {
-        val duration = 3000L // 3 секунди
+        val duration = 3000L
         val startTime = System.currentTimeMillis()
 
         while (true) {
@@ -162,7 +163,8 @@ fun PollScreen(
                                         pollAnswer = option.text,
                                         parentUrl = "",
                                         questionId = asset.pollData.questionId,
-                                        position = 0
+                                        position = asset.position,
+                                        assetId = asset.id
                                     )
                                 )
                                 onOptionClick(option.text)
@@ -179,7 +181,8 @@ fun PollScreen(
                                         pollAnswer = option.text,
                                         parentUrl = "",
                                         questionId = asset.pollData.questionId,
-                                        position = 0
+                                        position = asset.position,
+                                        assetId = asset.id
                                     )
                                 )
                                 onOptionClick(option.text)
@@ -389,7 +392,8 @@ fun PollOverlay(
                     TimelineEvent.TimelineAssetLikedEvent(
                         parentUrl = "",
                         customProducts = emptyList(),
-                        position = 0
+                        position = asset.position,
+                        assetId = asset.id
                     )
                 )
                 onLikeClick(asset.id)
@@ -412,7 +416,8 @@ fun PollOverlay(
                         TimelineEvent.TimelineAssetSharedEvent(
                             parentUrl = "",
                             customProducts = emptyList(),
-                            position = 0
+                            position = asset.position,
+                            assetId = asset.id
                         )
                     )
                     val intent = Intent(Intent.ACTION_SEND).apply {

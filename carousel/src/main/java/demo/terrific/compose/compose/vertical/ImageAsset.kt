@@ -78,10 +78,11 @@ fun ImageAsset(
         event = TimelineEvent.TimelineAssetViewStartedEvent(
             assetType = asset.type,
             parentUrl = "",
-            fixedPosition = 0,
-            position = 0,
+            fixedPosition = asset.position,
+            position = asset.position,
             products = emptyList(),
-            customProducts = emptyList()
+            customProducts = emptyList(),
+            assetId = asset.id
         )
     )
 
@@ -220,7 +221,8 @@ fun ImageOverlay(
                     TimelineEvent.TimelineAssetLikedEvent(
                         parentUrl = "",
                         customProducts = emptyList(),
-                        position = 0
+                        position = asset.position,
+                        assetId = asset.id
                     )
                 )
                 onLikeClick(asset.id)
@@ -246,7 +248,8 @@ fun ImageOverlay(
                         TimelineEvent.TimelineAssetSharedEvent(
                             parentUrl = "",
                             customProducts = emptyList(),
-                            position = 0
+                            position = asset.position,
+                            assetId = asset.id
                         )
                     )
                     val intent = Intent(Intent.ACTION_SEND).apply {
