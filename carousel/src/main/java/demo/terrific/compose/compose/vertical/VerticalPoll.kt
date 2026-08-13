@@ -350,14 +350,6 @@ fun PollOverlay(
         // CLOSE BUTTON
         IconButton(
             onClick = {
-
-                VideoSdk.analytics.sendEvent(
-                    TimelineEvent.TimelineClosedEvent(
-                        parentUrl = "",
-                        totalOpenDurationMs = 0L,
-                        activeViewDurationMs = 0L
-                    )
-                )
                 onBackClicked()
             },
             modifier = Modifier.align(Alignment.TopEnd)

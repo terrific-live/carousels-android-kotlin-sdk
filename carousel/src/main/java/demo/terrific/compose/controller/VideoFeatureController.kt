@@ -150,18 +150,21 @@ internal class VideoFeatureController(
                 selectedId = asset.id
             )
         }
-        VideoSdk.analytics.sendEvent(TimelineEvent.TimelineCarouselClickedEvent(
-            assetId = asset.id,
-            assetIds = _state.value.assets.map {
-                asset.id
-            },
-            assetTimestamps = _state.value.assets.map {
-                asset.timestamp.toString()
-            },
-            parentUrl = "",
-            totalAssets = 10, //fix
-            position = asset.position
-        ))
+        VideoSdk.analytics.sendEvent(
+            TimelineEvent.TimelineCarouselClickedEvent(
+                assetId = asset.id,
+                assetIds = _state.value.assets.map {
+                    it.id
+                },
+                assetTimestamps = _state.value.assets.map {
+                    it.timestamp.toString()
+                },
+                parentUrl = "",
+                totalAssets = _state.value.assets.size,
+                customProducts = emptyList(),
+                position = asset.position
+            )
+        )
     }
 
     fun onBack() {

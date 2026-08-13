@@ -60,6 +60,8 @@ internal class AnalyticsEventMapper(
                     auxData = mapOfNotNull(
                         "assetType" to event.assetType,
                         "parentUrl" to event.parentUrl,
+                        "products" to event.products,
+                        "customProducts" to event.customProducts,
                         "viewDurationMs" to event.viewDurationMs,
                         "drawerOpenDurationMs" to event.drawerOpenDurationMs,
                         "netoAssetWatchTimeMs" to event.netoAssetWatchTimeMs,
@@ -108,6 +110,7 @@ internal class AnalyticsEventMapper(
                         "assetIds" to event.assetIds,
                         "assetTimestamps" to event.assetTimestamps,
                         "totalAssets" to event.totalAssets,
+                        "customProducts" to event.customProducts,
                         "parentUrl" to event.parentUrl,
                         "position" to event.position
                     )
@@ -228,6 +231,12 @@ internal class AnalyticsEventMapper(
                         "clickPosition" to event.clickPosition,
                         "sponsorshipUrl" to event.sponsorshipUrl
                     )
+                )
+            }
+
+            is TimelineEvent.CustomAnalyticsEvent -> {
+                common.toRequest(
+                    auxData = event.auxData
                 )
             }
 

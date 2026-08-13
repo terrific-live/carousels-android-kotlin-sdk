@@ -6,13 +6,15 @@ import demo.terrific.compose.analytics.basemodels.VerticalSponsorshipPlacement
 
 interface AnalyticsEvent {
     val name: String
+    val assetId: String?
+        get() = null
 }
 
 sealed interface TimelineEvent : AnalyticsEvent {
 
     data class TimelineAssetViewStartedEvent(
 
-        val assetId: String,
+        override val assetId: String,
         val assetType: String?,
         val parentUrl: String?,
         val fixedPosition: Int?,
@@ -27,7 +29,7 @@ sealed interface TimelineEvent : AnalyticsEvent {
     }
 
     data class TimelineAssetViewEndedEvent(
-        val assetId: String,
+        override val assetId: String,
         val assetType: String?,
         val parentUrl: String?,
         val externalUserId: String? = null,
@@ -65,7 +67,7 @@ sealed interface TimelineEvent : AnalyticsEvent {
     }
 
     data class TimelineAssetLikedEvent(
-        val assetId: String,
+        override val assetId: String,
         val parentUrl: String?,
         val customProducts: List<String>? = null,
         val position: Int? = null,
@@ -77,7 +79,7 @@ sealed interface TimelineEvent : AnalyticsEvent {
     }
 
     data class TimelineAssetSharedEvent(
-        val assetId: String,
+        override val assetId: String,
         val parentUrl: String?,
         val customProducts: List<String>? = null,
         val position: Int? = null,
@@ -89,7 +91,7 @@ sealed interface TimelineEvent : AnalyticsEvent {
     }
 
     data class TimelinePollVotedEvent(
-        val assetId: String,
+        override val assetId: String,
         val pollId: String,
         val pollAnswer: String,
         val parentUrl: String?,
@@ -117,7 +119,7 @@ sealed interface TimelineEvent : AnalyticsEvent {
     data class TimelineCarouselHoveredEvent(
         val parentUrl: String?,
         val totalAssets: Int,
-        val assetId: String,
+        override val assetId: String,
         val assetIds: List<String>,
         val assetTimestamps: List<String>,
         val externalUserId: String? = null,
@@ -130,12 +132,12 @@ sealed interface TimelineEvent : AnalyticsEvent {
     }
 
     data class TimelineCarouselClickedEvent(
-        val assetId: String,
+        override val assetId: String,
         val assetIds: List<String>,
         val assetTimestamps: List<String>,
         val parentUrl: String?,
         val totalAssets: Int,
-        val customProducts: List<String>? = null,
+        val customProducts: List<String> = emptyList(),
         val position: Int? = null,
         val sponsorshipPlacement: HorizontalSponsorshipPlacement? = null,
         val sponsorshipUrl: String? = null
@@ -170,7 +172,7 @@ sealed interface TimelineEvent : AnalyticsEvent {
     }
 
     data class TimelineCTAButtonClickedEvent(
-        val assetId: String,
+        override val assetId: String,
         val parentUrl: String?,
         val terrificClickId: String? = null,
         val customProducts: List<String>? = null,
@@ -185,7 +187,7 @@ sealed interface TimelineEvent : AnalyticsEvent {
     }
 
     data class TimelineProductClickedEvent(
-        val assetId: String,
+        override val assetId: String,
         val itemViewSource: String,
         val product: String,
         val parentUrl: String?,
@@ -266,6 +268,12 @@ sealed interface TimelineEvent : AnalyticsEvent {
     ) : SessionAnalyticsEvent {
         override val name = "ShareLinkClicked"
     }
+
+    data class CustomAnalyticsEvent(
+        override val name: String,
+        val auxData: Map<String, Any?> = emptyMap(),
+        override val assetId: String? = null
+    ) : AnalyticsEvent
 
 // endregion
 }

@@ -40,6 +40,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
@@ -47,6 +50,7 @@ import androidx.media3.ui.PlayerView
 import coil.compose.AsyncImage
 import demo.terrific.compose.VideoSdk
 import demo.terrific.compose.analytics.TimelineEvent
+import demo.terrific.compose.analytics.utils.ActiveViewTimer
 import demo.terrific.compose.compose.common.DateTimeBadgeCarousel
 import demo.terrific.compose.compose.common.toFormatted
 import demo.terrific.compose.compose.vertical.openUrl
@@ -70,6 +74,64 @@ fun VideoCarousel(
     val pagerState = rememberPagerState(
         pageCount = { assets.size }
     )
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    val activeViewTimer = remember {
+        ActiveViewTimer()
+    }
+
+    val openedAt = remember {
+        System.currentTimeMillis()
+    }
+
+    DisposableEffect(lifecycleOwner) {
+
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+
+                Lifecycle.Event.ON_START -> {
+                    activeViewTimer.reset()
+                    activeViewTimer.start()
+
+                    VideoSdk.analytics.sendEvent(
+                        TimelineEvent.TimelineOpenedEvent(
+                            parentUrl = ""
+                        )
+                    )
+                }
+
+                Lifecycle.Event.ON_STOP -> {
+                    activeViewTimer.pause()
+
+                    VideoSdk.analytics.sendEvent(
+                        TimelineEvent.TimelineClosedEvent(
+                            parentUrl = "",
+                            totalOpenDurationMs =
+                                System.currentTimeMillis() - openedAt,
+                            activeViewDurationMs =
+                                activeViewTimer.getDurationMs()
+                        )
+                    )
+                }
+
+                else -> Unit
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        if (
+            lifecycleOwner.lifecycle.currentState
+                .isAtLeast(Lifecycle.State.STARTED)
+        ) {
+            activeViewTimer.start()
+        }
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     LaunchedEffect(pagerState.currentPage, assets) {
 
@@ -366,12 +428,6 @@ private fun VideoCardContent(
             .background(Color.Black)
             .clickable {
                 onVideoClick(video)
-
-                VideoSdk.analytics.sendEvent(
-                    TimelineEvent.TimelineOpenedEvent(
-                        parentUrl = ""
-                    )
-                )
 
 //                VideoSdk.analytics().trackEvent(
 //                    event = AnalyticsEvents.TimelineCarouselClicked,

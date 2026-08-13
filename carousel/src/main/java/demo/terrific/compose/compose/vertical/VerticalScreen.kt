@@ -136,8 +136,10 @@ fun VerticalScreen(
                             parentUrl = "",
                             netoAssetWatchTimeMs = now - assetViewStartedAt,
                             viewDurationMs = now - assetViewStartedAt,
-                            position = previousPage,
-                            products = listOf(),
+                            drawerOpenDurationMs = 0,
+                            position = asset.position,
+                            customProducts = emptyList(),
+                            products = emptyList(),
                             assetId = asset.id
                         )
                     )
@@ -156,14 +158,6 @@ fun VerticalScreen(
             .windowInsetsPadding(WindowInsets.systemBars)
     ) { page ->
         val asset = assets[page]
-
-        LaunchedEffect(pagerState) {
-            VideoSdk.analytics.sendEvent(
-                event = TimelineEvent.TimelineOpenedEvent(
-                    parentUrl = ""
-                )
-            )
-        }
 
         VerticalScreenPage(
             asset = asset,
@@ -290,17 +284,19 @@ fun FullscreenVideoPlayer(
             }
     }
 
-    VideoSdk.analytics.sendEvent(
-        event = TimelineEvent.TimelineAssetViewStartedEvent(
-            assetType = video.type,
-            parentUrl = "",
-            fixedPosition = video.position,
-            position = video.position,
-            products = emptyList(),
-            customProducts = emptyList(),
-            assetId = video.id
+    LaunchedEffect(video.id) {
+        VideoSdk.analytics.sendEvent(
+            event = TimelineEvent.TimelineAssetViewStartedEvent(
+                assetType = video.type,
+                parentUrl = "",
+                fixedPosition = video.position,
+                position = video.position,
+                products = emptyList(),
+                customProducts = emptyList(),
+                assetId = video.id
+            )
         )
-    )
+    }
 
     var isLoading by remember(video.id) {
         mutableStateOf(true)
@@ -581,14 +577,6 @@ fun VideoOverlay(
         // CLOSE BUTTON
         IconButton(
             onClick = {
-
-                VideoSdk.analytics.sendEvent(
-                    TimelineEvent.TimelineClosedEvent(
-                        parentUrl = "",
-                        totalOpenDurationMs = 0L,
-                        activeViewDurationMs = 0L
-                    )
-                )
                 onBackClicked()
             },
             modifier = Modifier.align(Alignment.TopEnd)
