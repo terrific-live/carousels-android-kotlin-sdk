@@ -29,7 +29,7 @@ object VideoSdk {
         "https://terrific-live-polls.web.app/"
 
     private const val ANALYTICS_BASE_URL =
-        "https://us-central1-terrific-deploy.cloudfunctions.net/"
+        "https://us-central1-terrific-live.cloudfunctions.net/"
 
     @Volatile
     private var isInitialized = false
