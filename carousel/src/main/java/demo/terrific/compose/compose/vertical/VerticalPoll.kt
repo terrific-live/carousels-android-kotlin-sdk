@@ -42,6 +42,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import demo.terrific.compose.VideoSdk
+import demo.terrific.compose.analytics.TimelineEvent
 import coil.compose.AsyncImage
 import demo.terrific.R
 import demo.terrific.compose.compose.common.DateTimeBadge
@@ -71,8 +73,20 @@ fun PollScreen(
     val hasVoted = selectedOptionText != null
     var progress by remember { mutableFloatStateOf(0f) }
 
+    VideoSdk.analytics.sendEvent(
+        event = TimelineEvent.TimelineAssetViewStartedEvent(
+            assetType = asset.type,
+            parentUrl = "",
+            fixedPosition = asset.position,
+            position = asset.position,
+            products = emptyList(),
+            customProducts = emptyList(),
+            assetId = asset.id
+        )
+    )
+
     LaunchedEffect(asset.id) {
-        val duration = 3000L // 3 секунди
+        val duration = 3000L
         val startTime = System.currentTimeMillis()
 
         while (true) {
@@ -142,13 +156,37 @@ fun PollScreen(
                             option = option,
                             options = asset.pollData.options,
                             isSelected = option.text == selectedOptionText,
-                            onClick = { onOptionClick(option.text) },
+                            onClick = {
+                                VideoSdk.analytics.sendEvent(
+                                    TimelineEvent.TimelinePollVotedEvent(
+                                        pollId = asset.id,
+                                        pollAnswer = option.text,
+                                        parentUrl = "",
+                                        questionId = asset.pollData.questionId,
+                                        position = asset.position,
+                                        assetId = asset.id
+                                    )
+                                )
+                                onOptionClick(option.text)
+                            },
                             style = style
                         )
                     } else {
                         PollOptionButton(
                             text = option.text,
-                            onClick = { onOptionClick(option.text) },
+                            onClick = {
+                                VideoSdk.analytics.sendEvent(
+                                    TimelineEvent.TimelinePollVotedEvent(
+                                        pollId = asset.id,
+                                        pollAnswer = option.text,
+                                        parentUrl = "",
+                                        questionId = asset.pollData.questionId,
+                                        position = asset.position,
+                                        assetId = asset.id
+                                    )
+                                )
+                                onOptionClick(option.text)
+                            },
                             style = style
                         )
                     }
@@ -311,7 +349,9 @@ fun PollOverlay(
 
         // CLOSE BUTTON
         IconButton(
-            onClick = { onBackClicked() },
+            onClick = {
+                onBackClicked()
+            },
             modifier = Modifier.align(Alignment.TopEnd)
         ) {
             Icon(
@@ -339,7 +379,18 @@ fun PollOverlay(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            IconButton(onClick = { onLikeClick(asset.id) }) {
+            IconButton(onClick = {
+                VideoSdk.analytics.sendEvent(
+                    TimelineEvent.TimelineAssetLikedEvent(
+                        parentUrl = "",
+                        customProducts = emptyList(),
+                        position = asset.position,
+                        assetId = asset.id
+                    )
+                )
+                onLikeClick(asset.id)
+                onLikeClick(asset.id)
+            }) {
                 Icon(
                     imageVector = if (isLiked) Icons.Default.ThumbUp else Icons.Default.ThumbUpOffAlt,
                     contentDescription = "Like",
@@ -353,6 +404,14 @@ fun PollOverlay(
 
             IconButton(
                 onClick = {
+                    VideoSdk.analytics.sendEvent(
+                        TimelineEvent.TimelineAssetSharedEvent(
+                            parentUrl = "",
+                            customProducts = emptyList(),
+                            position = asset.position,
+                            assetId = asset.id
+                        )
+                    )
                     val intent = Intent(Intent.ACTION_SEND).apply {
                         type = "text/plain"
                         putExtra(Intent.EXTRA_TEXT, asset.media?.mobileUrl)

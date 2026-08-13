@@ -26,12 +26,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import demo.terrific.compose.VideoSdk
-import demo.terrific.compose.analytics.AnalyticsEvent
 import demo.terrific.compose.compose.common.DateTimeBadgeCarousel
 import demo.terrific.compose.compose.common.toFormatted
 import demo.terrific.compose.model.AssetDto
-import demo.terrific.compose.model.analytics.AuxData
 import demo.terrific.compose.style.VideoFeatureStyle
 import demo.terrific.compose.style.withSdkFont
 
@@ -39,8 +36,7 @@ import demo.terrific.compose.style.withSdkFont
 fun PollCarouselItem(
     asset: AssetDto,
     timestampFormat: String?,
-    assetId: String,
-    onClick: (String) -> Unit,
+    onClick: (AssetDto) -> Unit,
     modifier: Modifier = Modifier,
     style: VideoFeatureStyle
 ) {
@@ -79,13 +75,19 @@ fun PollCarouselItem(
                 .clip(RoundedCornerShape(28.dp))
                 .then(backgroundModifier)
                 .clickable {
-                    onClick(assetId)
-                    VideoSdk.analytics().trackEvent(
-                        event = AnalyticsEvent.TimelineCarouselClicked,
-                        auxData = AuxData(
-                            assetType = "poll",
-                        )
-                    )
+                    onClick(asset)
+//                    VideoSdk.analytics().trackEvent(
+//                        event = AnalyticsEvents.TimelineCarouselClicked,
+//                        auxData = AuxData(
+////                            assetId = assetId,
+////                            assetIds = emptyList(),
+////                            assetTimestamps = emptyList(),
+//                            parentUrl = "",
+////                            totalAssets = 1,
+////                            assetType = "poll",
+//
+//                        )
+//                    )
                 },
             contentAlignment = Alignment.Center
         ) {

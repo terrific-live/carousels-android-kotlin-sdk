@@ -1,8 +1,8 @@
 package demo.terrific.compose.storage.analytics
 
 import android.content.Context
-import java.util.UUID
 import androidx.core.content.edit
+import java.util.UUID
 
 internal class SharedPrefsAnalyticsSessionStorage(
     context: Context
@@ -22,14 +22,16 @@ internal class SharedPrefsAnalyticsSessionStorage(
         return newValue
     }
 
-    override fun getOrCreateSessionId(storeId: String): String {
-        val existing = prefs.getString(KEY_SESSION_ID, null)
-        if (existing != null) return existing
-
-        val newValue = "${UUID.randomUUID()}-$storeId"
-        prefs.edit { putString(KEY_SESSION_ID, newValue) }
-        return newValue
-    }
+//    override fun getCarouselId(carouselId: String): String {
+//        val existing = prefs.getString(KEY_SESSION_ID, null)
+//        if (existing != null) return existing
+//
+//        val newValue = "${UUID.randomUUID()}"
+//
+//        prefs.edit { putString(KEY_SESSION_ID, newValue) }
+//
+//        return newValue
+//    }
 
     private companion object {
         const val KEY_USER_ID = "analytics_user_id"

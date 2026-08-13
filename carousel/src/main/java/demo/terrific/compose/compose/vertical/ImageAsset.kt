@@ -37,6 +37,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
 import demo.terrific.R
+import demo.terrific.compose.VideoSdk
+import demo.terrific.compose.analytics.TimelineEvent
 import demo.terrific.compose.compose.common.DateTimeBadge
 import demo.terrific.compose.compose.common.VideoProgressBar
 import demo.terrific.compose.compose.common.toFormatted
@@ -72,6 +74,17 @@ fun ImageAsset(
         }
     }
 
+    VideoSdk.analytics.sendEvent(
+        event = TimelineEvent.TimelineAssetViewStartedEvent(
+            assetType = asset.type,
+            parentUrl = "",
+            fixedPosition = asset.position,
+            position = asset.position,
+            products = emptyList(),
+            customProducts = emptyList(),
+            assetId = asset.id
+        )
+    )
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -169,7 +182,9 @@ fun ImageOverlay(
 
         // CLOSE BUTTON
         IconButton(
-            onClick = { onBackClicked() },
+            onClick = {
+                onBackClicked()
+            },
             modifier = Modifier.align(Alignment.TopEnd)
         ) {
             Icon(
@@ -193,8 +208,17 @@ fun ImageOverlay(
                 .align(Alignment.BottomEnd),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
-            IconButton(onClick = { onLikeClick(asset.id) }) {
+            IconButton(onClick = {
+                VideoSdk.analytics.sendEvent(
+                    TimelineEvent.TimelineAssetLikedEvent(
+                        parentUrl = "",
+                        customProducts = emptyList(),
+                        position = asset.position,
+                        assetId = asset.id
+                    )
+                )
+                onLikeClick(asset.id)
+            }) {
                 Icon(
                     imageVector = if (isLiked) {
                         Icons.Filled.ThumbUp
@@ -212,6 +236,14 @@ fun ImageOverlay(
 
             IconButton(
                 onClick = {
+                    VideoSdk.analytics.sendEvent(
+                        TimelineEvent.TimelineAssetSharedEvent(
+                            parentUrl = "",
+                            customProducts = emptyList(),
+                            position = asset.position,
+                            assetId = asset.id
+                        )
+                    )
                     val intent = Intent(Intent.ACTION_SEND).apply {
                         type = "text/plain"
                         putExtra(Intent.EXTRA_TEXT, asset.media?.mobileUrl)

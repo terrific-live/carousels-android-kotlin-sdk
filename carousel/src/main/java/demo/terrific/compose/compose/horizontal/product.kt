@@ -32,6 +32,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import demo.terrific.compose.VideoSdk
+import demo.terrific.compose.analytics.TimelineEvent
 import demo.terrific.compose.model.AssetDto
 import demo.terrific.compose.model.ProductDto
 import demo.terrific.compose.style.VideoFeatureStyle
@@ -43,7 +45,7 @@ fun TimelineProductsRowCarousel(
     products: List<ProductDto>,
     modifier: Modifier = Modifier,
     style: VideoFeatureStyle,
-    onProductClicked: (String) -> Unit,
+    onProductClicked: (AssetDto) -> Unit,
     asset: AssetDto
 ) {
 
@@ -108,7 +110,7 @@ fun TimelineProductCard(
     product: ProductDto,
     modifier: Modifier = Modifier,
     style: VideoFeatureStyle,
-    onProductClicked: (String) -> Unit,
+    onProductClicked: (AssetDto) -> Unit,
     asset: AssetDto
 ) {
 
@@ -122,7 +124,14 @@ fun TimelineProductCard(
         shape = RoundedCornerShape(22.dp),
         color = backgroundColor,
         onClick = {
-            onProductClicked(asset.id)
+            VideoSdk.analytics.sendEvent(TimelineEvent.TimelineProductClickedEvent(
+                itemViewSource = "video",
+                product = product.name,
+                parentUrl = "",
+                items = emptyList(),
+                assetId = asset.id
+            ))
+            onProductClicked(asset)
         }
     ) {
         Row(

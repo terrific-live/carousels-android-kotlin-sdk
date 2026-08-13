@@ -40,20 +40,23 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import coil.compose.AsyncImage
 import demo.terrific.compose.VideoSdk
-import demo.terrific.compose.analytics.AnalyticsEvent
+import demo.terrific.compose.analytics.TimelineEvent
+import demo.terrific.compose.analytics.utils.ActiveViewTimer
 import demo.terrific.compose.compose.common.DateTimeBadgeCarousel
 import demo.terrific.compose.compose.common.toFormatted
 import demo.terrific.compose.compose.vertical.openUrl
 import demo.terrific.compose.model.AssetDto
 import demo.terrific.compose.model.AssetType
 import demo.terrific.compose.model.CarouselConfigDto
-import demo.terrific.compose.model.analytics.AuxData
 import demo.terrific.compose.style.VideoFeatureStyle
 import demo.terrific.compose.style.withSdkFont
 import kotlinx.coroutines.delay
@@ -65,21 +68,89 @@ fun VideoCarousel(
     timestampFormat: String?,
     config: CarouselConfigDto?,
     style: VideoFeatureStyle,
-    onVideoClick: (String) -> Unit
+    onVideoClick: (AssetDto) -> Unit
 ) {
     val context = LocalContext.current
     val pagerState = rememberPagerState(
         pageCount = { assets.size }
     )
 
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    val activeViewTimer = remember {
+        ActiveViewTimer()
+    }
+
+    val openedAt = remember {
+        System.currentTimeMillis()
+    }
+
+    DisposableEffect(lifecycleOwner) {
+
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+
+                Lifecycle.Event.ON_START -> {
+                    activeViewTimer.reset()
+                    activeViewTimer.start()
+
+                    VideoSdk.analytics.sendEvent(
+                        TimelineEvent.TimelineOpenedEvent(
+                            parentUrl = ""
+                        )
+                    )
+                }
+
+                Lifecycle.Event.ON_STOP -> {
+                    activeViewTimer.pause()
+
+                    VideoSdk.analytics.sendEvent(
+                        TimelineEvent.TimelineClosedEvent(
+                            parentUrl = "",
+                            totalOpenDurationMs =
+                                System.currentTimeMillis() - openedAt,
+                            activeViewDurationMs =
+                                activeViewTimer.getDurationMs()
+                        )
+                    )
+                }
+
+                else -> Unit
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        if (
+            lifecycleOwner.lifecycle.currentState
+                .isAtLeast(Lifecycle.State.STARTED)
+        ) {
+            activeViewTimer.start()
+        }
+
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
     LaunchedEffect(pagerState.currentPage, assets) {
 
-        VideoSdk.analytics().trackTimelineAssetViewStarted(
-            assetType = "video",
-            position = pagerState.currentPage,
-            fixedPosition = pagerState.currentPage,
-            emptyList(),
-            emptyList()
+        VideoSdk.analytics.sendEvent(
+            TimelineEvent.TimelineCarouselLoadedEvent(
+                assetIds = assets.map { it.id },
+                assetTimestamps = assets.map { it.timestamp.toString() },
+                parentUrl = "",
+                totalAssets = assets.size
+            )
+        )
+
+        VideoSdk.analytics.sendEvent(
+            TimelineEvent.TimelineCarouselViewedEvent(
+                assetIds = assets.map { it.id },
+                assetTimestamps = assets.map { it.timestamp.toString() },
+                parentUrl = "",
+                totalAssets = assets.size
+            )
         )
     }
 
@@ -206,7 +277,6 @@ fun VideoCarousel(
                                 PollCarouselItem(
                                     asset = asset,
                                     timestampFormat = timestampFormat,
-                                    assetId = asset.id,
                                     onClick = onVideoClick,
                                     modifier = Modifier.fillMaxSize(),
                                     style = style
@@ -247,8 +317,7 @@ fun VideoCarousel(
                             products = asset.products,
                             asset = asset,
                             modifier = Modifier
-                                .fillMaxWidth()/*
-                            .height(productHeight)*/,
+                                .fillMaxWidth(),
                             style = style,
                             onProductClicked = onVideoClick
                         )
@@ -281,7 +350,7 @@ fun VideoCard(
     modifier: Modifier = Modifier,
     shouldPrepare: Boolean,
     isActive: Boolean,
-    onVideoClick: (String) -> Unit,
+    onVideoClick: (AssetDto) -> Unit,
     textBottomPadding: Dp = 68.dp,
     style: VideoFeatureStyle
 ) {
@@ -348,7 +417,7 @@ private fun VideoCardContent(
     timestampFormat: String?,
     modifier: Modifier,
     player: ExoPlayer?,
-    onVideoClick: (String) -> Unit,
+    onVideoClick: (AssetDto) -> Unit,
     textBottomPadding: Dp,
     style: VideoFeatureStyle
 ) {
@@ -358,12 +427,30 @@ private fun VideoCardContent(
             .clip(RoundedCornerShape(20.dp))
             .background(Color.Black)
             .clickable {
-                onVideoClick(video.id)
+                onVideoClick(video)
 
-                VideoSdk.analytics().trackEvent(
-                    event = AnalyticsEvent.TimelineCarouselClicked,
-                    auxData = AuxData(assetType = "video")
-                )
+//                VideoSdk.analytics().trackEvent(
+//                    event = AnalyticsEvents.TimelineCarouselClicked,
+//                    auxData = AuxData(
+//                        assetType = "video",
+//                        assetId = video.id,
+//                        assetIds = emptyList(),
+//                        assetTimestamps = emptyList(),
+//                        parentUrl = "",
+//                        totalAssets = 1
+//                    )
+//                )
+//                VideoSdk.analytics.sendEvent(
+//                    TimelineEvent.CarouselClicked(
+//                        assetId = video.id,
+//                        assetIds = listOf(video.id),
+//                        assetTimestamps = listOf(video.timestamp ?: ""),
+//                        totalAssets = 3,
+//                        parentUrl = "",
+//                        externalUserId = "",
+//                        position = 0
+//                    )
+//                )
             }
     ) {
         if (player != null) {

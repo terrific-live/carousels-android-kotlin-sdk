@@ -63,7 +63,8 @@ data class AssetDto(
     val timestamp: String? = null,
     val media: MediaDto? = null,
     val pollData: PollDataDto? = null,
-    val products: List<ProductDto>? = null
+    val products: List<ProductDto>? = null,
+    val position: Int
 )
 @Serializable
 data class SponsorshipBannerDto(

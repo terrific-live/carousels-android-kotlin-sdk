@@ -31,6 +31,15 @@ fun AppRoot() {
         }
 
     }
+//    VideoSdk.analytics.sendEvent(
+//        TimelineEvent.CustomAnalyticsEvent(
+//            name = "MyCustomEvent",
+//            auxData = mapOf(
+//                "foo" to "bar",
+//                "count" to 10
+//            )
+//        )
+//    )
 }
 
 
@@ -40,13 +49,7 @@ fun AppRoot() {
 //        carouselId = "HsaLDYzu47paYmoCmoOD"
 //    )
 //
-//    VideoSdk.setAnalyticsListener(
-//        object : VideoSdkAnalyticsListener {
-//            override fun onAnalyticsEventTracked(event: UserEventRequest) {
-//                Log.d("SDK_ANALYTICS", "Tracked: ${event.name}")
-//            }
-//        }
-//    )
+
 //
 //    AssetCarousel(
 //        storeId = "0bor4CHMEbm3M4Dluput",

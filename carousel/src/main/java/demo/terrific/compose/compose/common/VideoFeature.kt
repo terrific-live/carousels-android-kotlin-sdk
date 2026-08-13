@@ -32,9 +32,14 @@ fun AssetCarousel(
     storeId: String,
     carouselId: String,
     modifier: Modifier = Modifier,
-    style: VideoFeatureStyle = VideoFeatureStyle()
+    style: VideoFeatureStyle = VideoFeatureStyle(),
+    externalUserId: String = ""
 ) {
-    val controller = rememberVideoFeatureController(storeId = storeId)
+    val controller = rememberVideoFeatureController(
+        storeId = storeId,
+        carouselId = carouselId,
+        externalUserId = externalUserId
+    )
     val state by controller.state.collectAsState()
 
     LaunchedEffect(storeId, carouselId) {
@@ -120,12 +125,16 @@ fun AssetCarousel(
 
 @SuppressLint("RememberReturnType")
 @Composable
-internal fun rememberVideoFeatureController(storeId: String): VideoFeatureController {
+internal fun rememberVideoFeatureController(
+    storeId: String,
+    carouselId: String,
+    externalUserId: String
+): VideoFeatureController {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
     remember(context) {
-        VideoSdk.ensureInitialized(context, storeId)
+        VideoSdk.ensureInitialized(context, storeId, carouselId, externalUserId)
     }
 
     val repository = remember { VideoSdk.repository() }

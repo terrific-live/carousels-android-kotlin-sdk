@@ -23,12 +23,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import demo.terrific.compose.VideoSdk
-import demo.terrific.compose.analytics.AnalyticsEvent
 import demo.terrific.compose.compose.common.DateTimeBadgeCarousel
 import demo.terrific.compose.compose.common.toFormatted
 import demo.terrific.compose.model.AssetDto
-import demo.terrific.compose.model.analytics.AuxData
 import demo.terrific.compose.style.VideoFeatureStyle
 import demo.terrific.compose.style.withSdkFont
 
@@ -37,7 +34,7 @@ fun CarouselImage(
     asset: AssetDto,
     timestampFormat: String?,
     modifier: Modifier = Modifier,
-    onVideoClick: (String) -> Unit,
+    onVideoClick: (AssetDto) -> Unit,
     textBottomPadding: Dp = 68.dp,
     style: VideoFeatureStyle
 ) {
@@ -47,11 +44,7 @@ fun CarouselImage(
             .clip(RoundedCornerShape(20.dp))
             .background(Color.Black)
             .clickable {
-                onVideoClick(asset.id)
-                VideoSdk.analytics().trackEvent(
-                    event = AnalyticsEvent.TimelineCarouselClicked,
-                    auxData = AuxData(assetType = "video")
-                )
+                onVideoClick(asset)
             }
     ) {
         AsyncImage(

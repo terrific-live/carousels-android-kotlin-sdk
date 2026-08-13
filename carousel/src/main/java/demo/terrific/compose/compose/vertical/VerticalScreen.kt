@@ -4,6 +4,7 @@ package demo.terrific.compose.compose.vertical
 
 import android.content.Context
 import android.content.Intent
+import androidx.annotation.OptIn
 import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -33,10 +34,13 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -61,7 +65,7 @@ import androidx.media3.ui.PlayerView
 import coil.compose.AsyncImage
 import demo.terrific.R
 import demo.terrific.compose.VideoSdk
-import demo.terrific.compose.analytics.AnalyticsEvent
+import demo.terrific.compose.analytics.TimelineEvent
 import demo.terrific.compose.compose.common.DateTimeBadge
 import demo.terrific.compose.compose.common.SwipeHintOverlay
 import demo.terrific.compose.compose.common.VideoProgressBar
@@ -70,10 +74,10 @@ import demo.terrific.compose.compose.horizontal.toComposeColorOrNull
 import demo.terrific.compose.model.AssetDto
 import demo.terrific.compose.model.AssetType
 import demo.terrific.compose.model.SponsorshipDto
-import demo.terrific.compose.model.analytics.AuxData
 import demo.terrific.compose.style.VideoFeatureStyle
 import demo.terrific.compose.style.withSdkFont
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Composable
 fun VerticalScreen(
@@ -103,14 +107,49 @@ fun VerticalScreen(
         mutableStateOf(false)
     }
 
-    LaunchedEffect(pagerState) {
-        VideoSdk.analytics().trackEvent(
-            AnalyticsEvent.TimelineOpened,
-            AuxData(
-                assets = assets
-            )
-        )
+    var activeAssetIndex by remember {
+        mutableIntStateOf(pagerState.settledPage)
     }
+
+    var assetViewStartedAt by remember {
+        mutableLongStateOf(System.currentTimeMillis())
+    }
+
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.settledPage }
+            .distinctUntilChanged()
+            .collect { newPage ->
+
+                val previousPage = activeAssetIndex
+
+                if (newPage == previousPage) {
+                    return@collect
+                }
+
+                val previousAsset = assets.getOrNull(previousPage)
+                val now = System.currentTimeMillis()
+
+                previousAsset?.let { asset ->
+                    VideoSdk.analytics.sendEvent(
+                        TimelineEvent.TimelineAssetViewEndedEvent(
+                            assetType = asset.type,
+                            parentUrl = "",
+                            netoAssetWatchTimeMs = now - assetViewStartedAt,
+                            viewDurationMs = now - assetViewStartedAt,
+                            drawerOpenDurationMs = 0,
+                            position = asset.position,
+                            customProducts = emptyList(),
+                            products = emptyList(),
+                            assetId = asset.id
+                        )
+                    )
+                }
+
+                activeAssetIndex = newPage
+                assetViewStartedAt = now
+            }
+    }
+
 
     VerticalPager(
         state = pagerState,
@@ -212,7 +251,7 @@ private fun VerticalScreenPage(
     }
 }
 
-@androidx.annotation.OptIn(UnstableApi::class)
+@OptIn(UnstableApi::class)
 @Composable
 fun FullscreenVideoPlayer(
     video: AssetDto,
@@ -243,6 +282,20 @@ fun FullscreenVideoPlayer(
                 playWhenReady = false
                 repeatMode = Player.REPEAT_MODE_ONE
             }
+    }
+
+    LaunchedEffect(video.id) {
+        VideoSdk.analytics.sendEvent(
+            event = TimelineEvent.TimelineAssetViewStartedEvent(
+                assetType = video.type,
+                parentUrl = "",
+                fixedPosition = video.position,
+                position = video.position,
+                products = emptyList(),
+                customProducts = emptyList(),
+                assetId = video.id
+            )
+        )
     }
 
     var isLoading by remember(video.id) {
@@ -523,7 +576,9 @@ fun VideoOverlay(
 
         // CLOSE BUTTON
         IconButton(
-            onClick = { onBackClicked() },
+            onClick = {
+                onBackClicked()
+            },
             modifier = Modifier.align(Alignment.TopEnd)
         ) {
             Icon(
@@ -549,7 +604,17 @@ fun VideoOverlay(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            IconButton(onClick = { onLikeClick(video.id) }) {
+            IconButton(onClick = {
+                VideoSdk.analytics.sendEvent(
+                    TimelineEvent.TimelineAssetLikedEvent(
+                        parentUrl = "",
+                        customProducts = emptyList(),
+                        position = video.position,
+                        assetId = video.id
+                    )
+                )
+                onLikeClick(video.id)
+            }) {
                 Icon(
                     imageVector = if (isLiked) {
                         Icons.Filled.ThumbUp
@@ -567,6 +632,14 @@ fun VideoOverlay(
 
             IconButton(
                 onClick = {
+                    VideoSdk.analytics.sendEvent(
+                        TimelineEvent.TimelineAssetSharedEvent(
+                            parentUrl = "",
+                            customProducts = emptyList(),
+                            position = video.position,
+                            assetId = video.id
+                        )
+                    )
                     val intent = Intent(Intent.ACTION_SEND).apply {
                         type = "text/plain"
                         putExtra(Intent.EXTRA_TEXT, video.media?.mobileUrl)
