@@ -58,6 +58,8 @@ dependencies {
     implementation("androidx.media3:media3-ui:1.10.0")
     implementation(libs.androidx.compose.ui.unit)
     androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
     implementation("androidx.compose.foundation:foundation-layout:1.10.6")
     implementation("io.coil-kt:coil-compose:2.5.0")
 }

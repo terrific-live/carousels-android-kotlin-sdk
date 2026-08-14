@@ -34,7 +34,8 @@ internal class AnalyticsEventMapper(
             ),
             storeId = storeIdProvider(),
             eventId = UUID.randomUUID().toString(),
-            timeStamp = Clock.System.now().toString()
+            timeStamp = Clock.System.now().toString(),
+            externalUserId = externalUserId
         )
 
         return when (event) {
@@ -50,8 +51,7 @@ internal class AnalyticsEventMapper(
                         "sponsorshipPlacement" to event.sponsorshipPlacement?.name,
                         "sponsorshipPosition" to event.sponsorshipPosition?.name,
                         "sponsorshipUrl" to event.sponsorshipUrl
-                    ),
-                    externalUserId = externalUserId
+                    )
                 )
             }
 
@@ -217,8 +217,7 @@ internal class AnalyticsEventMapper(
                         "parentUrl" to event.parentUrl,
                         "sponsorshipPlacement" to event.sponsorshipPlacement.name,
                         "sponsorshipUrl" to event.sponsorshipUrl
-                    ),
-                    externalUserId = ""
+                    )
                 )
             }
 
@@ -253,13 +252,13 @@ private data class CommonFields(
     val sessionId: String,
     val storeId: String,
     val eventId: String,
-    val timeStamp: String
+    val timeStamp: String,
+    val externalUserId: String
 ) {
     fun toRequest(
         auxData: Map<String, Any?>,
         pollId: String? = null,
-        pollAnswer: String? = null,
-        externalUserId: String = ""
+        pollAnswer: String? = null
     ) = AnalyticsRequest(
         name = name,
         userId = userId,
@@ -278,6 +277,8 @@ private data class CommonFields(
 
 private fun AnalyticsEvent.assetIdOrNull(): String? {
     return when (this) {
+
+        is TimelineEvent.CustomAnalyticsEvent -> assetId
         is TimelineEvent.TimelineAssetViewStartedEvent -> assetId
         is TimelineEvent.TimelineAssetViewEndedEvent -> assetId
         is TimelineEvent.TimelineAssetLikedEvent -> assetId
