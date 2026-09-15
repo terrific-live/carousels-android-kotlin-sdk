@@ -60,6 +60,7 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
     implementation("androidx.compose.foundation:foundation-layout:1.10.6")
     implementation("io.coil-kt:coil-compose:2.5.0")
+    testImplementation(libs.junit)
 }
 
 mavenPublishing {
@@ -77,7 +78,7 @@ mavenPublishing {
     coordinates(
         groupId = "live.terrific",
         artifactId = "carousels-android-kotlin-sdk",
-        version = "1.0.14"
+        version = "1.0.15"
     )
 
     pom {

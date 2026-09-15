@@ -52,6 +52,8 @@ import demo.terrific.compose.VideoSdk
 import demo.terrific.compose.analytics.TimelineEvent
 import demo.terrific.compose.analytics.utils.ActiveViewTimer
 import demo.terrific.compose.compose.common.DateTimeBadgeCarousel
+import demo.terrific.compose.compose.common.autoPlayDelayMillis
+import demo.terrific.compose.compose.common.rememberIsLifecycleResumed
 import demo.terrific.compose.compose.common.toFormatted
 import demo.terrific.compose.compose.vertical.openUrl
 import demo.terrific.compose.model.AssetDto
@@ -76,6 +78,23 @@ fun VideoCarousel(
     )
 
     val lifecycleOwner = LocalLifecycleOwner.current
+    val isLifecycleResumed = rememberIsLifecycleResumed()
+
+    val previewPlayer = remember(context.applicationContext) {
+        ExoPlayer.Builder(context.applicationContext)
+            .build()
+            .apply {
+                repeatMode = Player.REPEAT_MODE_ONE
+                playWhenReady = false
+            }
+    }
+
+    DisposableEffect(previewPlayer) {
+        onDispose {
+            previewPlayer.pause()
+            previewPlayer.release()
+        }
+    }
 
     val activeViewTimer = remember {
         ActiveViewTimer()
@@ -133,6 +152,36 @@ fun VideoCarousel(
         }
     }
 
+    val activePreviewUrl = assets
+        .getOrNull(pagerState.currentPage)
+        ?.takeIf {
+            it.type == AssetType.VIDEO.type && !pagerState.isScrollInProgress
+        }
+        ?.media
+        ?.videoPreviewUrl
+        ?.takeIf { it.isNotBlank() }
+
+    LaunchedEffect(activePreviewUrl, isLifecycleResumed, previewPlayer) {
+        if (!isLifecycleResumed || activePreviewUrl == null) {
+            previewPlayer.pause()
+            previewPlayer.playWhenReady = false
+            return@LaunchedEffect
+        }
+
+        if (previewPlayer.currentMediaItem?.mediaId != activePreviewUrl) {
+            previewPlayer.setMediaItem(
+                MediaItem.Builder()
+                    .setMediaId(activePreviewUrl)
+                    .setUri(activePreviewUrl)
+                    .build()
+            )
+            previewPlayer.prepare()
+        }
+
+        previewPlayer.playWhenReady = true
+        previewPlayer.play()
+    }
+
     LaunchedEffect(pagerState.currentPage, assets) {
 
         VideoSdk.analytics.sendEvent(
@@ -154,11 +203,19 @@ fun VideoCarousel(
         )
     }
 
-    LaunchedEffect(assets.size) {
-        if (assets.size <= 1) return@LaunchedEffect
+    val autoPlayDelayMillis = config.autoPlayDelayMillis()
+
+    LaunchedEffect(assets.size, autoPlayDelayMillis, isLifecycleResumed) {
+        if (
+            assets.size <= 1 ||
+            autoPlayDelayMillis == null ||
+            !isLifecycleResumed
+        ) {
+            return@LaunchedEffect
+        }
 
         while (true) {
-            delay(2_000)
+            delay(autoPlayDelayMillis)
 
             if (!pagerState.isScrollInProgress) {
                 val nextPage =
@@ -174,7 +231,9 @@ fun VideoCarousel(
     }
     Column() {
 
-        config?.sponsorship?.takeIf { it.enabled }?.let {
+        config?.sponsorship?.takeIf {
+            it.enabled && !it.topLogoUrl.isNullOrBlank()
+        }?.let {
             SponsorshipHeader(it)
         }
 
@@ -248,10 +307,6 @@ fun VideoCarousel(
 
                 val assetHeight = assetWidth * 16f / 9f
 
-                val shouldPrepareVideo =
-                    asset.type == AssetType.VIDEO.type &&
-                            kotlin.math.abs(page - pagerState.currentPage) <= 1
-
                 val isCurrentPage =
                     page == pagerState.currentPage &&
                             !pagerState.isScrollInProgress
@@ -284,11 +339,12 @@ fun VideoCarousel(
                             }
 
                             AssetType.VIDEO.type -> {
-                                VideoCard(
+                                SharedPlayerVideoCard(
                                     video = asset,
                                     timestampFormat = timestampFormat,
-                                    shouldPrepare = shouldPrepareVideo,
-                                    isActive = isCurrentPage,
+                                    player = previewPlayer.takeIf {
+                                        isCurrentPage && isLifecycleResumed
+                                    },
                                     onVideoClick = onVideoClick,
                                     textBottomPadding =
                                         if (hasProducts) 68.dp else 20.dp,
@@ -344,6 +400,27 @@ fun VideoCarousel(
 }
 
 @Composable
+private fun SharedPlayerVideoCard(
+    video: AssetDto,
+    timestampFormat: String?,
+    modifier: Modifier = Modifier,
+    player: ExoPlayer?,
+    onVideoClick: (AssetDto) -> Unit,
+    textBottomPadding: Dp = 68.dp,
+    style: VideoFeatureStyle
+) {
+    VideoCardContent(
+        video = video,
+        timestampFormat = timestampFormat,
+        modifier = modifier,
+        player = player,
+        onVideoClick = onVideoClick,
+        textBottomPadding = textBottomPadding,
+        style = style
+    )
+}
+
+@Composable
 fun VideoCard(
     video: AssetDto,
     timestampFormat: String?,
@@ -356,6 +433,7 @@ fun VideoCard(
 ) {
     val context = LocalContext.current
     val videoUrl = video.media?.videoPreviewUrl
+    val isLifecycleResumed = rememberIsLifecycleResumed()
 
     if (!shouldPrepare || videoUrl.isNullOrBlank()) {
         VideoCardContent(
@@ -367,7 +445,6 @@ fun VideoCard(
             textBottomPadding = textBottomPadding,
             style = style
         )
-
         return
     }
 
@@ -382,20 +459,17 @@ fun VideoCard(
             }
     }
 
-    LaunchedEffect(player, isActive) {
-        if (isActive) {
-            player.playWhenReady = true
+    LaunchedEffect(player, isActive, isLifecycleResumed) {
+        if (isActive && isLifecycleResumed) {
             player.play()
         } else {
-            player.playWhenReady = false
             player.pause()
         }
     }
 
     DisposableEffect(player) {
         onDispose {
-            player.playWhenReady = false
-            player.stop()
+            player.pause()
             player.release()
         }
     }

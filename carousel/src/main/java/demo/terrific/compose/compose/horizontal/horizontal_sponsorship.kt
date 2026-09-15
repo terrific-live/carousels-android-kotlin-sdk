@@ -1,23 +1,18 @@
 package demo.terrific.compose.compose.horizontal
 
-import android.graphics.Color.parseColor
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import demo.terrific.compose.VideoSdk
@@ -35,7 +30,10 @@ fun HorizontalSponsorshipBanner(
             .fillMaxWidth()
             .height(48.dp)
             .clip(RoundedCornerShape(bottomStart = 12.dp, bottomEnd = 12.dp))
-            .background(Color(parseColor(sponsorship?.backgroundColor)))
+            .background(
+                sponsorship?.backgroundColor?.toComposeColorOrNullSafe()
+                    ?: Color.Transparent
+            )
             .clickable{
                 sponsorship?.clickRedirect?.let(onClick)
                 VideoSdk.analytics.sendEvent(
@@ -60,20 +58,12 @@ fun HorizontalSponsorshipBanner(
 fun SponsorshipHeader(
     sponsorship: SponsorshipDto?
 ) {
-    Row(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.Start,
-        verticalAlignment = Alignment.CenterVertically
+        contentAlignment = Alignment.CenterStart
     ) {
-
-        Text(
-            text = sponsorship?.sponsorLabel.orEmpty(),
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-
         AsyncImage(
             model = sponsorship?.topLogoUrl,
             modifier = Modifier

@@ -41,6 +41,7 @@ import demo.terrific.compose.VideoSdk
 import demo.terrific.compose.analytics.TimelineEvent
 import demo.terrific.compose.compose.common.DateTimeBadge
 import demo.terrific.compose.compose.common.VideoProgressBar
+import demo.terrific.compose.compose.common.sharePayload
 import demo.terrific.compose.compose.common.toFormatted
 import demo.terrific.compose.model.AssetDto
 import demo.terrific.compose.style.VideoFeatureStyle
@@ -233,29 +234,38 @@ fun ImageOverlay(
             Spacer(Modifier.height(12.dp))
 
             val context = LocalContext.current
+            val sharePayload = remember(asset) {
+                asset.sharePayload()
+            }
 
-            IconButton(
-                onClick = {
-                    VideoSdk.analytics.sendEvent(
-                        TimelineEvent.TimelineAssetSharedEvent(
-                            parentUrl = "",
-                            customProducts = emptyList(),
-                            position = asset.position,
-                            assetId = asset.id
-                        )
-                    )
-                    val intent = Intent(Intent.ACTION_SEND).apply {
-                        type = "text/plain"
-                        putExtra(Intent.EXTRA_TEXT, asset.media?.mobileUrl)
+            if (sharePayload != null) {
+                IconButton(
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_TEXT, sharePayload.intentText)
+                        }
+
+                        runCatching {
+                            context.startActivity(Intent.createChooser(intent, "Share"))
+                        }.onSuccess {
+                            VideoSdk.analytics.sendEvent(
+                                TimelineEvent.TimelineAssetSharedEvent(
+                                    parentUrl = sharePayload.url.orEmpty(),
+                                    customProducts = emptyList(),
+                                    position = asset.position,
+                                    assetId = asset.id
+                                )
+                            )
+                        }
                     }
-                    context.startActivity(Intent.createChooser(intent, "Share"))
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_share),
+                        contentDescription = "Share",
+                        tint = Color.White
+                    )
                 }
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_share),
-                    contentDescription = "Share",
-                    tint = Color.White
-                )
             }
 
         }
