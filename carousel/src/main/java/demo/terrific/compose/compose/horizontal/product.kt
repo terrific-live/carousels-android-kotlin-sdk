@@ -114,10 +114,10 @@ fun TimelineProductCard(
     asset: AssetDto
 ) {
 
-    val backgroundColor = product.background?.color?.toComposeColorOrNull() ?: Color(0xFF4A4A4A)
-    val textColor = product.background?.textColor?.toComposeColorOrNull() ?: Color.White
-    val badgeColor = product.badge?.color?.toComposeColorOrNull() ?: Color(0xFF2C2C2C)
-    val badgeTextColor = product.badge?.textColor?.toComposeColorOrNull() ?: Color.White
+    val backgroundColor = product.background?.color?.toComposeColorOrNullSafe() ?: Color(0xFF4A4A4A)
+    val textColor = product.background?.textColor?.toComposeColorOrNullSafe() ?: Color.White
+    val badgeColor = product.badge?.color?.toComposeColorOrNullSafe() ?: Color(0xFF2C2C2C)
+    val badgeTextColor = product.badge?.textColor?.toComposeColorOrNullSafe() ?: Color.White
 
     Surface(
         modifier = modifier.wrapContentSize(),
@@ -204,6 +204,10 @@ fun TimelineProductCard(
 }
 
 @SuppressLint("UseKtx")
-fun String.toComposeColorOrNull(): Color {
-    return Color(android.graphics.Color.parseColor(this))
-}
+internal fun String.toComposeColorOrNullSafe(): Color? = runCatching {
+    Color(android.graphics.Color.parseColor(this))
+}.getOrNull()
+
+@SuppressLint("UseKtx")
+fun String.toComposeColorOrNull(): Color =
+    toComposeColorOrNullSafe() ?: Color.Transparent

@@ -65,6 +65,18 @@ data class AssetDto(
     val pollData: PollDataDto? = null,
     val products: List<ProductDto>? = null,
     val position: Int
+) {
+    // Kept outside the primary constructor to preserve the published AssetDto JVM signature.
+    var ctaButton: AssetButtonDto? = null
+}
+
+@Serializable
+data class AssetButtonDto(
+    val color: String? = null,
+    val position: String? = null,
+    val text: String? = null,
+    val textColor: String? = null,
+    val url: String? = null
 )
 @Serializable
 data class SponsorshipBannerDto(

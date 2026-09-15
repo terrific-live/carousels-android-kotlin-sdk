@@ -48,8 +48,9 @@ import coil.compose.AsyncImage
 import demo.terrific.R
 import demo.terrific.compose.compose.common.DateTimeBadge
 import demo.terrific.compose.compose.common.VideoProgressBar
+import demo.terrific.compose.compose.common.sharePayload
 import demo.terrific.compose.compose.common.toFormatted
-import demo.terrific.compose.compose.horizontal.toComposeColorOrNull
+import demo.terrific.compose.compose.horizontal.toComposeColorOrNullSafe
 import demo.terrific.compose.model.AssetDto
 import demo.terrific.compose.model.PollOptionDto
 import demo.terrific.compose.model.SponsorshipDto
@@ -103,8 +104,8 @@ fun PollScreen(
         Modifier.background(
             Brush.verticalGradient(
                 listOf(
-                    asset.background?.color?.primary?.toComposeColorOrNull() ?: Color(0xFFA61E2C),
-                    asset.background?.color?.secondary?.toComposeColorOrNull() ?: Color(0xFF233B7B)
+                    asset.background?.color?.primary?.toComposeColorOrNullSafe() ?: Color(0xFFA61E2C),
+                    asset.background?.color?.secondary?.toComposeColorOrNullSafe() ?: Color(0xFF233B7B)
                 )
             )
         )
@@ -389,7 +390,6 @@ fun PollOverlay(
                     )
                 )
                 onLikeClick(asset.id)
-                onLikeClick(asset.id)
             }) {
                 Icon(
                     imageVector = if (isLiked) Icons.Default.ThumbUp else Icons.Default.ThumbUpOffAlt,
@@ -401,25 +401,34 @@ fun PollOverlay(
             Spacer(Modifier.height(12.dp))
 
             val context = LocalContext.current
+            val sharePayload = remember(asset) {
+                asset.sharePayload()
+            }
 
-            IconButton(
-                onClick = {
-                    VideoSdk.analytics.sendEvent(
-                        TimelineEvent.TimelineAssetSharedEvent(
-                            parentUrl = "",
-                            customProducts = emptyList(),
-                            position = asset.position,
-                            assetId = asset.id
-                        )
-                    )
-                    val intent = Intent(Intent.ACTION_SEND).apply {
-                        type = "text/plain"
-                        putExtra(Intent.EXTRA_TEXT, asset.media?.mobileUrl)
+            if (sharePayload != null) {
+                IconButton(
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_TEXT, sharePayload.intentText)
+                        }
+
+                        runCatching {
+                            context.startActivity(Intent.createChooser(intent, "Share"))
+                        }.onSuccess {
+                            VideoSdk.analytics.sendEvent(
+                                TimelineEvent.TimelineAssetSharedEvent(
+                                    parentUrl = sharePayload.url.orEmpty(),
+                                    customProducts = emptyList(),
+                                    position = asset.position,
+                                    assetId = asset.id
+                                )
+                            )
+                        }
                     }
-                    context.startActivity(Intent.createChooser(intent, "Share"))
+                ) {
+                    Icon(Icons.Outlined.Share, contentDescription = "Share", tint = Color.White)
                 }
-            ) {
-                Icon(Icons.Outlined.Share, contentDescription = "Share", tint = Color.White)
             }
         }
 

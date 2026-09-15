@@ -57,8 +57,8 @@ fun PollCarouselItem(
             Modifier.background(
                 Brush.verticalGradient(
                     listOf(
-                        asset.background?.color?.primary?.toComposeColorOrNull() ?: Color(0xFFA61E2C),
-                        asset.background?.color?.secondary?.toComposeColorOrNull() ?: Color(0xFF233B7B)
+                        asset.background?.color?.primary?.toComposeColorOrNullSafe() ?: Color(0xFFA61E2C),
+                        asset.background?.color?.secondary?.toComposeColorOrNullSafe() ?: Color(0xFF233B7B)
                     )
                 )
             )

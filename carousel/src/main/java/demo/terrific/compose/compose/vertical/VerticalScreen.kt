@@ -69,8 +69,11 @@ import demo.terrific.compose.analytics.TimelineEvent
 import demo.terrific.compose.compose.common.DateTimeBadge
 import demo.terrific.compose.compose.common.SwipeHintOverlay
 import demo.terrific.compose.compose.common.VideoProgressBar
+import demo.terrific.compose.compose.common.sharePayload
+import demo.terrific.compose.compose.common.rememberIsLifecycleResumed
+import demo.terrific.compose.compose.common.shouldPreloadVideo
 import demo.terrific.compose.compose.common.toFormatted
-import demo.terrific.compose.compose.horizontal.toComposeColorOrNull
+import demo.terrific.compose.compose.horizontal.toComposeColorOrNullSafe
 import demo.terrific.compose.model.AssetDto
 import demo.terrific.compose.model.AssetType
 import demo.terrific.compose.model.SponsorshipDto
@@ -92,7 +95,6 @@ fun VerticalScreen(
     sponsorship: SponsorshipDto?,
     style: VideoFeatureStyle
 ) {
-
     val startIndex = remember(assets, videoId) {
         assets.indexOfFirst { it.id == videoId }.takeIf { it >= 0 } ?: 0
     }
@@ -101,9 +103,13 @@ fun VerticalScreen(
         initialPage = startIndex,
         pageCount = { assets.size }
     )
-
+    val isLifecycleResumed = rememberIsLifecycleResumed()
 
     var hasShownSwipeHint by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    var isMuted by rememberSaveable {
         mutableStateOf(false)
     }
 
@@ -153,6 +159,7 @@ fun VerticalScreen(
 
     VerticalPager(
         state = pagerState,
+        beyondViewportPageCount = 1,
         modifier = Modifier
             .fillMaxSize()
             .windowInsetsPadding(WindowInsets.systemBars)
@@ -163,7 +170,19 @@ fun VerticalScreen(
             asset = asset,
             timestampFormat = timestampFormat,
             isLiked = asset.id in likedVideos,
-            isActive = pagerState.settledPage == page,
+            isActive = pagerState.settledPage == page &&
+                    !pagerState.isScrollInProgress,
+            isLifecycleResumed = isLifecycleResumed,
+            shouldPrepareVideo = shouldPreloadVideo(
+                page = page,
+                currentPage = pagerState.currentPage,
+                isVideo = asset.type == AssetType.VIDEO.type,
+                isLifecycleResumed = isLifecycleResumed
+            ),
+            isMuted = isMuted,
+            onMuteToggle = {
+                isMuted = !isMuted
+            },
             showSwipeHint = !hasShownSwipeHint && page == pagerState.settledPage,
             onSwipeHintFinished = {
                 hasShownSwipeHint = true
@@ -184,6 +203,10 @@ private fun VerticalScreenPage(
     timestampFormat: String?,
     isLiked: Boolean,
     isActive: Boolean,
+    isLifecycleResumed: Boolean,
+    shouldPrepareVideo: Boolean,
+    isMuted: Boolean,
+    onMuteToggle: () -> Unit,
     showSwipeHint: Boolean,
     onSwipeHintFinished: () -> Unit,
     selectedPollAnswer: String?,
@@ -213,11 +236,15 @@ private fun VerticalScreenPage(
         }
 
         AssetType.VIDEO.type -> {
-            FullscreenVideoPlayer(
+            PreloadedFullscreenVideoPlayer(
                 video = asset,
                 timestampFormat = timestampFormat,
                 isLiked = isLiked,
                 isActive = isActive,
+                isLifecycleResumed = isLifecycleResumed,
+                shouldPrepare = shouldPrepareVideo,
+                isMuted = isMuted,
+                onMuteToggle = onMuteToggle,
                 onLikeClick = { onLikeClick(asset.id) },
                 onBackClicked = onBackClicked,
                 style = style,
@@ -265,26 +292,140 @@ fun FullscreenVideoPlayer(
     sponsorship: SponsorshipDto?,
     showSwipeHint: Boolean
 ) {
+    val isLifecycleResumed = rememberIsLifecycleResumed()
+    var isMuted by rememberSaveable(video.id) {
+        mutableStateOf(false)
+    }
+
+    PreloadedFullscreenVideoPlayer(
+        video = video,
+        timestampFormat = timestampFormat,
+        isLiked = isLiked,
+        isActive = isActive,
+        isLifecycleResumed = isLifecycleResumed,
+        shouldPrepare = true,
+        isMuted = isMuted,
+        onMuteToggle = { isMuted = !isMuted },
+        onSwipeHintFinished = onSwipeHintFinished,
+        onLikeClick = onLikeClick,
+        onBackClicked = onBackClicked,
+        style = style,
+        sponsorship = sponsorship,
+        showSwipeHint = showSwipeHint
+    )
+}
+
+@Composable
+private fun PreloadedFullscreenVideoPlayer(
+    video: AssetDto,
+    timestampFormat: String?,
+    isLiked: Boolean,
+    isActive: Boolean,
+    isLifecycleResumed: Boolean,
+    shouldPrepare: Boolean,
+    isMuted: Boolean,
+    onMuteToggle: () -> Unit,
+    onSwipeHintFinished: () -> Unit,
+    onLikeClick: (String) -> Unit,
+    onBackClicked: () -> Unit,
+    style: VideoFeatureStyle,
+    sponsorship: SponsorshipDto?,
+    showSwipeHint: Boolean
+) {
+    val context = LocalContext.current
+    val videoUrl = video.media?.mobileUrl?.takeIf { it.isNotBlank() }
+
+    if (!shouldPrepare || !isLifecycleResumed || videoUrl == null) {
+        FullscreenVideoPlayerContent(
+            video = video,
+            timestampFormat = timestampFormat,
+            isLiked = isLiked,
+            isActive = isActive,
+            player = null,
+            isMuted = isMuted,
+            onMuteToggle = onMuteToggle,
+            onSwipeHintFinished = onSwipeHintFinished,
+            onLikeClick = onLikeClick,
+            onBackClicked = onBackClicked,
+            style = style,
+            sponsorship = sponsorship,
+            showSwipeHint = showSwipeHint
+        )
+        return
+    }
+
+    val player = remember(video.id, videoUrl) {
+        ExoPlayer.Builder(context.applicationContext)
+            .build()
+            .apply {
+                setMediaItem(MediaItem.fromUri(videoUrl))
+                repeatMode = Player.REPEAT_MODE_ONE
+                playWhenReady = false
+                prepare()
+            }
+    }
+
+    DisposableEffect(player) {
+        onDispose {
+            player.pause()
+            player.release()
+        }
+    }
+
+    LaunchedEffect(player, isActive) {
+        if (!isActive) {
+            player.pause()
+            return@LaunchedEffect
+        }
+        player.play()
+    }
+
+    LaunchedEffect(player, isMuted) {
+        player.volume = if (isMuted) 0f else 1f
+    }
+
+    FullscreenVideoPlayerContent(
+        video = video,
+        timestampFormat = timestampFormat,
+        isLiked = isLiked,
+        isActive = isActive,
+        player = player,
+        isMuted = isMuted,
+        onMuteToggle = onMuteToggle,
+        onSwipeHintFinished = onSwipeHintFinished,
+        onLikeClick = onLikeClick,
+        onBackClicked = onBackClicked,
+        style = style,
+        sponsorship = sponsorship,
+        showSwipeHint = showSwipeHint
+    )
+}
+
+@OptIn(UnstableApi::class)
+@Composable
+private fun FullscreenVideoPlayerContent(
+    video: AssetDto,
+    timestampFormat: String?,
+    isLiked: Boolean,
+    isActive: Boolean,
+    player: ExoPlayer?,
+    isMuted: Boolean,
+    onMuteToggle: () -> Unit,
+    onSwipeHintFinished: () -> Unit,
+    onLikeClick: (String) -> Unit,
+    onBackClicked: () -> Unit,
+    style: VideoFeatureStyle,
+    sponsorship: SponsorshipDto?,
+    showSwipeHint: Boolean
+) {
     val context = LocalContext.current
     val products = video.products.orEmpty()
     val hasProducts = products.isNotEmpty()
     var progress by remember { mutableFloatStateOf(0f) }
 
-    val player = remember(video.id) {
-        ExoPlayer.Builder(context.applicationContext)
-            .build()
-            .apply {
-                video.media?.mobileUrl?.let {
-                    setMediaItem(MediaItem.fromUri(it))
-                }
+    LaunchedEffect(video.id, isActive) {
+        if (!isActive) return@LaunchedEffect
 
-                prepare()
-                playWhenReady = false
-                repeatMode = Player.REPEAT_MODE_ONE
-            }
-    }
-
-    LaunchedEffect(video.id) {
         VideoSdk.analytics.sendEvent(
             event = TimelineEvent.TimelineAssetViewStartedEvent(
                 assetType = video.type,
@@ -306,7 +447,14 @@ fun FullscreenVideoPlayer(
         mutableStateOf<String?>(null)
     }
 
-    DisposableEffect(player) {
+    DisposableEffect(player, video.id) {
+        if (player == null) {
+            return@DisposableEffect onDispose { }
+        }
+
+        isLoading = player.playbackState != Player.STATE_READY
+        errorMessage = player.playerError?.message
+
         val listener = object : Player.Listener {
 
             override fun onPlaybackStateChanged(playbackState: Int) {
@@ -336,24 +484,12 @@ fun FullscreenVideoPlayer(
         player.addListener(listener)
 
         onDispose {
-            player.playWhenReady = false
-            player.pause()
             player.removeListener(listener)
-            player.release()
         }
     }
 
-    LaunchedEffect(isActive, player) {
-        if (isActive) {
-            player.playWhenReady = true
-            player.play()
-        } else {
-            player.playWhenReady = false
-            player.pause()
-        }
-    }
     LaunchedEffect(player, isActive) {
-        while (isActive) {
+        while (isActive && player != null) {
             val duration = player.duration
             val position = player.currentPosition
 
@@ -391,7 +527,7 @@ fun FullscreenVideoPlayer(
 //                    .aspectRatio(9f / 16f)
             ) {
 
-                if (isLoading || errorMessage != null) {
+                if (player != null && (isLoading || errorMessage != null)) {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -433,19 +569,31 @@ fun FullscreenVideoPlayer(
                 Box(
                     modifier = videoContainerModifier
                 ) {
-                    AndroidView(
-                        factory = {
-                            PlayerView(it).apply {
-                                this.player = player
-                                useController = false
-                                resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL
-                            }
-                        },
-                        update = {
-                            it.player = player
-                        },
-                        modifier = Modifier.fillMaxSize()
-                    )
+                    if (player != null) {
+                        AndroidView(
+                            factory = {
+                                PlayerView(it).apply {
+                                    this.player = player
+                                    useController = false
+                                    resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                                }
+                            },
+                            update = {
+                                it.player = player
+                            },
+                            onRelease = {
+                                it.player = null
+                            },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        AsyncImage(
+                            model = video.media?.coverUrl ?: video.background?.imageUrl,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Fit
+                        )
+                    }
 
                     if (showTopSponsorBanner) {
                         SponsorshipBanner(
@@ -483,7 +631,7 @@ fun FullscreenVideoPlayer(
                             title = it.title,
                             logoUrl = it.logoUrl,
                             link = it.clickRedirect,
-                            backgroundColor = sponsorship.badge.backgroundColor?.toComposeColorOrNull()
+                            backgroundColor = sponsorship.badge.backgroundColor?.toComposeColorOrNullSafe()
                                 ?: Color(0xFFF96544),
                             modifier = Modifier
                                 .align(alignment),
@@ -494,13 +642,15 @@ fun FullscreenVideoPlayer(
 
                         )
                     }
-                    VideoOverlay(
+                    VideoOverlayContent(
                         video = video,
                         timestampFormat = timestampFormat,
                         isLiked = isLiked,
                         onLikeClick = onLikeClick,
                         onBackClicked = onBackClicked,
                         player = player,
+                        isMuted = isMuted,
+                        onMuteToggle = onMuteToggle,
                         style = style
                     )
 
@@ -566,6 +716,38 @@ fun VideoOverlay(
     player: ExoPlayer,
     style: VideoFeatureStyle
 ) {
+    var isMuted by remember(video.id, player) {
+        mutableStateOf(player.volume == 0f)
+    }
+
+    VideoOverlayContent(
+        video = video,
+        timestampFormat = timestampFormat,
+        isLiked = isLiked,
+        onLikeClick = onLikeClick,
+        onBackClicked = onBackClicked,
+        player = player,
+        isMuted = isMuted,
+        onMuteToggle = {
+            isMuted = !isMuted
+            player.volume = if (isMuted) 0f else 1f
+        },
+        style = style
+    )
+}
+
+@Composable
+private fun VideoOverlayContent(
+    video: AssetDto,
+    timestampFormat: String?,
+    isLiked: Boolean,
+    onLikeClick: (String) -> Unit,
+    onBackClicked: () -> Unit,
+    player: ExoPlayer?,
+    isMuted: Boolean,
+    onMuteToggle: () -> Unit,
+    style: VideoFeatureStyle
+) {
 
     Box(
         modifier = Modifier
@@ -595,8 +777,6 @@ fun VideoOverlay(
         if (formatted?.isNotEmpty() == true) {
             DateTimeBadge(formatted)
         }
-
-        var isMuted by remember { mutableStateOf(false) }
 
         Column(
             modifier = Modifier
@@ -629,38 +809,46 @@ fun VideoOverlay(
             Spacer(Modifier.height(12.dp))
 
             val context = LocalContext.current
-
-            IconButton(
-                onClick = {
-                    VideoSdk.analytics.sendEvent(
-                        TimelineEvent.TimelineAssetSharedEvent(
-                            parentUrl = "",
-                            customProducts = emptyList(),
-                            position = video.position,
-                            assetId = video.id
-                        )
-                    )
-                    val intent = Intent(Intent.ACTION_SEND).apply {
-                        type = "text/plain"
-                        putExtra(Intent.EXTRA_TEXT, video.media?.mobileUrl)
-                    }
-                    context.startActivity(Intent.createChooser(intent, "Share"))
-                }
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_share),
-                    contentDescription = "Share",
-                    tint = Color.White
-                )
+            val sharePayload = remember(video) {
+                video.sharePayload()
             }
 
+            if (sharePayload != null) {
+                IconButton(
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_TEXT, sharePayload.intentText)
+                        }
 
-            Spacer(Modifier.height(12.dp))
+                        runCatching {
+                            context.startActivity(Intent.createChooser(intent, "Share"))
+                        }.onSuccess {
+                            VideoSdk.analytics.sendEvent(
+                                TimelineEvent.TimelineAssetSharedEvent(
+                                    parentUrl = sharePayload.url.orEmpty(),
+                                    customProducts = emptyList(),
+                                    position = video.position,
+                                    assetId = video.id
+                                )
+                            )
+                        }
+                    }
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_share),
+                        contentDescription = "Share",
+                        tint = Color.White
+                    )
+                }
+
+                Spacer(Modifier.height(12.dp))
+            }
 
             IconButton(
+                enabled = player != null,
                 onClick = {
-                    isMuted = !isMuted
-                    player.volume = if (isMuted) 0f else 1f
+                    onMuteToggle()
                 }
             ) {
                 Icon(

@@ -25,7 +25,6 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        maven { url = uri("https://jitpack.io") }
     }
 }
 ```
@@ -35,7 +34,7 @@ dependencyResolutionManagement {
 ### 2. Add dependency
 
 ```kotlin
-implementation("com.github.terrific-live:carousels-android-kotlin-sdk:v1.0.11")
+implementation("live.terrific:carousels-android-kotlin-sdk:1.0.15")
 ```
 ---
 
@@ -105,10 +104,10 @@ You can fully customize UI via `VideoFeatureStyle`.
 ```kotlin
 AssetCarousel(
     storeId = "your_store_id",
-    carouselId = "your_carousel_id"
+    carouselId = "your_carousel_id",
     style = VideoFeatureStyle(
-        carouselHeight: Dp = 220.dp,
-        cornerRadius: Dp = 16.dp
+        carouselHeight = 220.dp,
+        cornerRadius = 16.dp
     )
 )
 ```

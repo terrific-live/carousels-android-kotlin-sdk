@@ -36,7 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import coil.compose.AsyncImage
-import demo.terrific.compose.compose.horizontal.toComposeColorOrNull
+import demo.terrific.compose.compose.horizontal.toComposeColorOrNullSafe
 import demo.terrific.compose.model.ProductDto
 import demo.terrific.compose.style.VideoFeatureStyle
 import demo.terrific.compose.style.withSdkFont
@@ -111,12 +111,12 @@ fun TimelineProductCardFullscreen(
     style: VideoFeatureStyle
 ) {
     val context = LocalContext.current
-    val backgroundColor = product.background?.color?.toComposeColorOrNull() ?: Color(0xFF4A4A4A)
-    val textColor = product.background?.textColor?.toComposeColorOrNull() ?: Color.White
-    val badgeColor = product.badge?.color?.toComposeColorOrNull() ?: Color(0xFF2C2C2C)
-    val badgeTextColor = product.badge?.textColor?.toComposeColorOrNull() ?: Color.White
-    val ctaColor = product.ctaButton?.color?.toComposeColorOrNull() ?: Color.White
-    val ctaTextColor = product.ctaButton?.textColor?.toComposeColorOrNull() ?: Color.Black
+    val backgroundColor = product.background?.color?.toComposeColorOrNullSafe() ?: Color(0xFF4A4A4A)
+    val textColor = product.background?.textColor?.toComposeColorOrNullSafe() ?: Color.White
+    val badgeColor = product.badge?.color?.toComposeColorOrNullSafe() ?: Color(0xFF2C2C2C)
+    val badgeTextColor = product.badge?.textColor?.toComposeColorOrNullSafe() ?: Color.White
+    val ctaColor = product.ctaButton?.color?.toComposeColorOrNullSafe() ?: Color.White
+    val ctaTextColor = product.ctaButton?.textColor?.toComposeColorOrNullSafe() ?: Color.Black
 
     Surface(
         modifier = modifier.fillMaxWidth(),

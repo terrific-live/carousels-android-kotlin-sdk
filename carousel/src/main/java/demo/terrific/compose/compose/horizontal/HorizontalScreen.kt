@@ -52,6 +52,9 @@ import demo.terrific.compose.VideoSdk
 import demo.terrific.compose.analytics.TimelineEvent
 import demo.terrific.compose.analytics.utils.ActiveViewTimer
 import demo.terrific.compose.compose.common.DateTimeBadgeCarousel
+import demo.terrific.compose.compose.common.autoPlayDelayMillis
+import demo.terrific.compose.compose.common.rememberIsLifecycleResumed
+import demo.terrific.compose.compose.common.shouldPreloadVideo
 import demo.terrific.compose.compose.common.toFormatted
 import demo.terrific.compose.compose.vertical.openUrl
 import demo.terrific.compose.model.AssetDto
@@ -76,6 +79,7 @@ fun VideoCarousel(
     )
 
     val lifecycleOwner = LocalLifecycleOwner.current
+    val isLifecycleResumed = rememberIsLifecycleResumed()
 
     val activeViewTimer = remember {
         ActiveViewTimer()
@@ -154,11 +158,19 @@ fun VideoCarousel(
         )
     }
 
-    LaunchedEffect(assets.size) {
-        if (assets.size <= 1) return@LaunchedEffect
+    val autoPlayDelayMillis = config.autoPlayDelayMillis()
+
+    LaunchedEffect(assets.size, autoPlayDelayMillis, isLifecycleResumed) {
+        if (
+            assets.size <= 1 ||
+            autoPlayDelayMillis == null ||
+            !isLifecycleResumed
+        ) {
+            return@LaunchedEffect
+        }
 
         while (true) {
-            delay(2_000)
+            delay(autoPlayDelayMillis)
 
             if (!pagerState.isScrollInProgress) {
                 val nextPage =
@@ -174,7 +186,9 @@ fun VideoCarousel(
     }
     Column() {
 
-        config?.sponsorship?.takeIf { it.enabled }?.let {
+        config?.sponsorship?.takeIf {
+            it.enabled && !it.topLogoUrl.isNullOrBlank()
+        }?.let {
             SponsorshipHeader(it)
         }
 
@@ -248,13 +262,16 @@ fun VideoCarousel(
 
                 val assetHeight = assetWidth * 16f / 9f
 
-                val shouldPrepareVideo =
-                    asset.type == AssetType.VIDEO.type &&
-                            kotlin.math.abs(page - pagerState.currentPage) <= 1
-
                 val isCurrentPage =
                     page == pagerState.currentPage &&
                             !pagerState.isScrollInProgress
+
+                val shouldPrepareVideo = shouldPreloadVideo(
+                    page = page,
+                    currentPage = pagerState.currentPage,
+                    isVideo = asset.type == AssetType.VIDEO.type,
+                    isLifecycleResumed = isLifecycleResumed
+                )
 
                 Column(
                     modifier = Modifier
@@ -356,6 +373,7 @@ fun VideoCard(
 ) {
     val context = LocalContext.current
     val videoUrl = video.media?.videoPreviewUrl
+    val isLifecycleResumed = rememberIsLifecycleResumed()
 
     if (!shouldPrepare || videoUrl.isNullOrBlank()) {
         VideoCardContent(
@@ -367,7 +385,6 @@ fun VideoCard(
             textBottomPadding = textBottomPadding,
             style = style
         )
-
         return
     }
 
@@ -382,20 +399,17 @@ fun VideoCard(
             }
     }
 
-    LaunchedEffect(player, isActive) {
-        if (isActive) {
-            player.playWhenReady = true
+    LaunchedEffect(player, isActive, isLifecycleResumed) {
+        if (isActive && isLifecycleResumed) {
             player.play()
         } else {
-            player.playWhenReady = false
             player.pause()
         }
     }
 
     DisposableEffect(player) {
         onDispose {
-            player.playWhenReady = false
-            player.stop()
+            player.pause()
             player.release()
         }
     }
