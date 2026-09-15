@@ -71,6 +71,7 @@ import demo.terrific.compose.compose.common.SwipeHintOverlay
 import demo.terrific.compose.compose.common.VideoProgressBar
 import demo.terrific.compose.compose.common.sharePayload
 import demo.terrific.compose.compose.common.rememberIsLifecycleResumed
+import demo.terrific.compose.compose.common.shouldPreloadVideo
 import demo.terrific.compose.compose.common.toFormatted
 import demo.terrific.compose.compose.horizontal.toComposeColorOrNullSafe
 import demo.terrific.compose.model.AssetDto
@@ -94,8 +95,6 @@ fun VerticalScreen(
     sponsorship: SponsorshipDto?,
     style: VideoFeatureStyle
 ) {
-    val context = LocalContext.current
-
     val startIndex = remember(assets, videoId) {
         assets.indexOfFirst { it.id == videoId }.takeIf { it >= 0 } ?: 0
     }
@@ -104,55 +103,7 @@ fun VerticalScreen(
         initialPage = startIndex,
         pageCount = { assets.size }
     )
-
     val isLifecycleResumed = rememberIsLifecycleResumed()
-
-    val player = remember(context.applicationContext) {
-        ExoPlayer.Builder(context.applicationContext)
-            .build()
-            .apply {
-                repeatMode = Player.REPEAT_MODE_ONE
-                playWhenReady = false
-            }
-    }
-
-    DisposableEffect(player) {
-        onDispose {
-            player.pause()
-            player.release()
-        }
-    }
-
-    val activeVideoUrl = assets
-        .getOrNull(pagerState.settledPage)
-        ?.takeIf { it.type == AssetType.VIDEO.type }
-        ?.media
-        ?.mobileUrl
-        ?.takeIf { it.isNotBlank() }
-
-    val shouldPlay = isLifecycleResumed && !pagerState.isScrollInProgress
-
-    LaunchedEffect(activeVideoUrl, shouldPlay, player) {
-        if (!shouldPlay || activeVideoUrl == null) {
-            player.pause()
-            player.playWhenReady = false
-            return@LaunchedEffect
-        }
-
-        if (player.currentMediaItem?.mediaId != activeVideoUrl) {
-            player.setMediaItem(
-                MediaItem.Builder()
-                    .setMediaId(activeVideoUrl)
-                    .setUri(activeVideoUrl)
-                    .build()
-            )
-            player.prepare()
-        }
-
-        player.playWhenReady = true
-        player.play()
-    }
-
 
     var hasShownSwipeHint by rememberSaveable {
         mutableStateOf(false)
@@ -160,10 +111,6 @@ fun VerticalScreen(
 
     var isMuted by rememberSaveable {
         mutableStateOf(false)
-    }
-
-    LaunchedEffect(player, isMuted) {
-        player.volume = if (isMuted) 0f else 1f
     }
 
     var activeAssetIndex by remember {
@@ -212,6 +159,7 @@ fun VerticalScreen(
 
     VerticalPager(
         state = pagerState,
+        beyondViewportPageCount = 1,
         modifier = Modifier
             .fillMaxSize()
             .windowInsetsPadding(WindowInsets.systemBars)
@@ -222,10 +170,15 @@ fun VerticalScreen(
             asset = asset,
             timestampFormat = timestampFormat,
             isLiked = asset.id in likedVideos,
-            isActive = pagerState.settledPage == page,
-            player = player.takeIf {
-                pagerState.settledPage == page && shouldPlay
-            },
+            isActive = pagerState.settledPage == page &&
+                    !pagerState.isScrollInProgress,
+            isLifecycleResumed = isLifecycleResumed,
+            shouldPrepareVideo = shouldPreloadVideo(
+                page = page,
+                currentPage = pagerState.currentPage,
+                isVideo = asset.type == AssetType.VIDEO.type,
+                isLifecycleResumed = isLifecycleResumed
+            ),
             isMuted = isMuted,
             onMuteToggle = {
                 isMuted = !isMuted
@@ -250,7 +203,8 @@ private fun VerticalScreenPage(
     timestampFormat: String?,
     isLiked: Boolean,
     isActive: Boolean,
-    player: ExoPlayer?,
+    isLifecycleResumed: Boolean,
+    shouldPrepareVideo: Boolean,
     isMuted: Boolean,
     onMuteToggle: () -> Unit,
     showSwipeHint: Boolean,
@@ -282,12 +236,13 @@ private fun VerticalScreenPage(
         }
 
         AssetType.VIDEO.type -> {
-            FullscreenVideoPlayerContent(
+            PreloadedFullscreenVideoPlayer(
                 video = asset,
                 timestampFormat = timestampFormat,
                 isLiked = isLiked,
                 isActive = isActive,
-                player = player,
+                isLifecycleResumed = isLifecycleResumed,
+                shouldPrepare = shouldPrepareVideo,
                 isMuted = isMuted,
                 onMuteToggle = onMuteToggle,
                 onLikeClick = { onLikeClick(asset.id) },
@@ -337,18 +292,76 @@ fun FullscreenVideoPlayer(
     sponsorship: SponsorshipDto?,
     showSwipeHint: Boolean
 ) {
-    val context = LocalContext.current
     val isLifecycleResumed = rememberIsLifecycleResumed()
     var isMuted by rememberSaveable(video.id) {
         mutableStateOf(false)
     }
 
-    val player = remember(video.id) {
+    PreloadedFullscreenVideoPlayer(
+        video = video,
+        timestampFormat = timestampFormat,
+        isLiked = isLiked,
+        isActive = isActive,
+        isLifecycleResumed = isLifecycleResumed,
+        shouldPrepare = true,
+        isMuted = isMuted,
+        onMuteToggle = { isMuted = !isMuted },
+        onSwipeHintFinished = onSwipeHintFinished,
+        onLikeClick = onLikeClick,
+        onBackClicked = onBackClicked,
+        style = style,
+        sponsorship = sponsorship,
+        showSwipeHint = showSwipeHint
+    )
+}
+
+@Composable
+private fun PreloadedFullscreenVideoPlayer(
+    video: AssetDto,
+    timestampFormat: String?,
+    isLiked: Boolean,
+    isActive: Boolean,
+    isLifecycleResumed: Boolean,
+    shouldPrepare: Boolean,
+    isMuted: Boolean,
+    onMuteToggle: () -> Unit,
+    onSwipeHintFinished: () -> Unit,
+    onLikeClick: (String) -> Unit,
+    onBackClicked: () -> Unit,
+    style: VideoFeatureStyle,
+    sponsorship: SponsorshipDto?,
+    showSwipeHint: Boolean
+) {
+    val context = LocalContext.current
+    val videoUrl = video.media?.mobileUrl?.takeIf { it.isNotBlank() }
+
+    if (!shouldPrepare || !isLifecycleResumed || videoUrl == null) {
+        FullscreenVideoPlayerContent(
+            video = video,
+            timestampFormat = timestampFormat,
+            isLiked = isLiked,
+            isActive = isActive,
+            player = null,
+            isMuted = isMuted,
+            onMuteToggle = onMuteToggle,
+            onSwipeHintFinished = onSwipeHintFinished,
+            onLikeClick = onLikeClick,
+            onBackClicked = onBackClicked,
+            style = style,
+            sponsorship = sponsorship,
+            showSwipeHint = showSwipeHint
+        )
+        return
+    }
+
+    val player = remember(video.id, videoUrl) {
         ExoPlayer.Builder(context.applicationContext)
             .build()
             .apply {
+                setMediaItem(MediaItem.fromUri(videoUrl))
                 repeatMode = Player.REPEAT_MODE_ONE
                 playWhenReady = false
+                prepare()
             }
     }
 
@@ -359,21 +372,10 @@ fun FullscreenVideoPlayer(
         }
     }
 
-    LaunchedEffect(player, video.id, isActive, isLifecycleResumed) {
-        val videoUrl = video.media?.mobileUrl?.takeIf { it.isNotBlank() }
-        if (!isActive || !isLifecycleResumed || videoUrl == null) {
+    LaunchedEffect(player, isActive) {
+        if (!isActive) {
             player.pause()
             return@LaunchedEffect
-        }
-
-        if (player.currentMediaItem?.mediaId != videoUrl) {
-            player.setMediaItem(
-                MediaItem.Builder()
-                    .setMediaId(videoUrl)
-                    .setUri(videoUrl)
-                    .build()
-            )
-            player.prepare()
         }
         player.play()
     }
@@ -387,9 +389,9 @@ fun FullscreenVideoPlayer(
         timestampFormat = timestampFormat,
         isLiked = isLiked,
         isActive = isActive,
-        player = player.takeIf { isActive && isLifecycleResumed },
+        player = player,
         isMuted = isMuted,
-        onMuteToggle = { isMuted = !isMuted },
+        onMuteToggle = onMuteToggle,
         onSwipeHintFinished = onSwipeHintFinished,
         onLikeClick = onLikeClick,
         onBackClicked = onBackClicked,

@@ -41,6 +41,32 @@ class CarouselPoliciesTest {
     }
 
     @Test
+    fun `video preload window contains at most three slides`() {
+        val preloadedPages = (0..20).filter { page ->
+            shouldPreloadVideo(
+                page = page,
+                currentPage = 10,
+                isVideo = true,
+                isLifecycleResumed = true
+            )
+        }
+
+        assertEquals(listOf(9, 10, 11), preloadedPages)
+    }
+
+    @Test
+    fun `video preload is disabled while lifecycle is paused`() {
+        assertFalse(
+            shouldPreloadVideo(
+                page = 5,
+                currentPage = 5,
+                isVideo = true,
+                isLifecycleResumed = false
+            )
+        )
+    }
+
+    @Test
     fun `share is hidden when prefilled text is unavailable`() {
         assertNull(asset(title = " ", description = null).sharePayload())
     }

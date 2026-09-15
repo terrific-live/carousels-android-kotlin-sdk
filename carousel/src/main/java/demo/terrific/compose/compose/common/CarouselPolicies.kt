@@ -15,6 +15,14 @@ internal fun CarouselConfigDto?.autoPlayDelayMillis(): Long? {
     return intervalSeconds * 1_000L
 }
 
+internal fun shouldPreloadVideo(
+    page: Int,
+    currentPage: Int,
+    isVideo: Boolean,
+    isLifecycleResumed: Boolean
+): Boolean =
+    isLifecycleResumed && isVideo && kotlin.math.abs(page - currentPage) <= 1
+
 internal data class SharePayload(
     val text: String,
     val url: String?

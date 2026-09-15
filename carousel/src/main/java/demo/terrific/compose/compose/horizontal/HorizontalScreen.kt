@@ -54,6 +54,7 @@ import demo.terrific.compose.analytics.utils.ActiveViewTimer
 import demo.terrific.compose.compose.common.DateTimeBadgeCarousel
 import demo.terrific.compose.compose.common.autoPlayDelayMillis
 import demo.terrific.compose.compose.common.rememberIsLifecycleResumed
+import demo.terrific.compose.compose.common.shouldPreloadVideo
 import demo.terrific.compose.compose.common.toFormatted
 import demo.terrific.compose.compose.vertical.openUrl
 import demo.terrific.compose.model.AssetDto
@@ -79,22 +80,6 @@ fun VideoCarousel(
 
     val lifecycleOwner = LocalLifecycleOwner.current
     val isLifecycleResumed = rememberIsLifecycleResumed()
-
-    val previewPlayer = remember(context.applicationContext) {
-        ExoPlayer.Builder(context.applicationContext)
-            .build()
-            .apply {
-                repeatMode = Player.REPEAT_MODE_ONE
-                playWhenReady = false
-            }
-    }
-
-    DisposableEffect(previewPlayer) {
-        onDispose {
-            previewPlayer.pause()
-            previewPlayer.release()
-        }
-    }
 
     val activeViewTimer = remember {
         ActiveViewTimer()
@@ -150,36 +135,6 @@ fun VideoCarousel(
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
-    }
-
-    val activePreviewUrl = assets
-        .getOrNull(pagerState.currentPage)
-        ?.takeIf {
-            it.type == AssetType.VIDEO.type && !pagerState.isScrollInProgress
-        }
-        ?.media
-        ?.videoPreviewUrl
-        ?.takeIf { it.isNotBlank() }
-
-    LaunchedEffect(activePreviewUrl, isLifecycleResumed, previewPlayer) {
-        if (!isLifecycleResumed || activePreviewUrl == null) {
-            previewPlayer.pause()
-            previewPlayer.playWhenReady = false
-            return@LaunchedEffect
-        }
-
-        if (previewPlayer.currentMediaItem?.mediaId != activePreviewUrl) {
-            previewPlayer.setMediaItem(
-                MediaItem.Builder()
-                    .setMediaId(activePreviewUrl)
-                    .setUri(activePreviewUrl)
-                    .build()
-            )
-            previewPlayer.prepare()
-        }
-
-        previewPlayer.playWhenReady = true
-        previewPlayer.play()
     }
 
     LaunchedEffect(pagerState.currentPage, assets) {
@@ -311,6 +266,13 @@ fun VideoCarousel(
                     page == pagerState.currentPage &&
                             !pagerState.isScrollInProgress
 
+                val shouldPrepareVideo = shouldPreloadVideo(
+                    page = page,
+                    currentPage = pagerState.currentPage,
+                    isVideo = asset.type == AssetType.VIDEO.type,
+                    isLifecycleResumed = isLifecycleResumed
+                )
+
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -339,12 +301,11 @@ fun VideoCarousel(
                             }
 
                             AssetType.VIDEO.type -> {
-                                SharedPlayerVideoCard(
+                                VideoCard(
                                     video = asset,
                                     timestampFormat = timestampFormat,
-                                    player = previewPlayer.takeIf {
-                                        isCurrentPage && isLifecycleResumed
-                                    },
+                                    shouldPrepare = shouldPrepareVideo,
+                                    isActive = isCurrentPage,
                                     onVideoClick = onVideoClick,
                                     textBottomPadding =
                                         if (hasProducts) 68.dp else 20.dp,
@@ -397,27 +358,6 @@ fun VideoCarousel(
         }
 
     }
-}
-
-@Composable
-private fun SharedPlayerVideoCard(
-    video: AssetDto,
-    timestampFormat: String?,
-    modifier: Modifier = Modifier,
-    player: ExoPlayer?,
-    onVideoClick: (AssetDto) -> Unit,
-    textBottomPadding: Dp = 68.dp,
-    style: VideoFeatureStyle
-) {
-    VideoCardContent(
-        video = video,
-        timestampFormat = timestampFormat,
-        modifier = modifier,
-        player = player,
-        onVideoClick = onVideoClick,
-        textBottomPadding = textBottomPadding,
-        style = style
-    )
 }
 
 @Composable
